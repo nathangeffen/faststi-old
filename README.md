@@ -9,3 +9,6 @@ It's also still in development.
 
 - Nathan Geffen
 - Stefan Scholz
+
+- Blossom V executable from Kolmogorov et al.:
+http://pub.ist.ac.at/~vnk/software.html#BLOSSOM5
