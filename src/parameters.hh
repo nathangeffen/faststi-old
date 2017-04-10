@@ -1,3 +1,7 @@
+/**
+   Manages parameters and configuration file that contains parameters.
+ */
+
 #ifndef PARAMETERS_HH
 #define PARAMETERS_HH
 
@@ -15,15 +19,24 @@
 
 #include "common.hh"
 
+/* Used to determine what types of parameter to print */
+
 #define NO_PARMS 0
 #define ALL_PARMS 1
 #define VARYING_PARMS 2
+
+/* Used to process parameters with ranges */
 
 enum RangeType {
   NONE = 0,
   THREE_PARM,
   COMMA_SEPARATED
 };
+
+/**
+   Exceptions used when processing parameters and reading the
+   configuration file.
+*/
 
 class BadParameter: public std::exception
 {
@@ -74,6 +87,7 @@ protected:
 };
 
 
+/* Range creation functions */
 std::vector<double> setRange(const double, const double to, const double);
 std::vector<double> setRangeUniRand(const size_t, const double, const double);
 
@@ -111,25 +125,27 @@ struct ParameterValue {
 
 /**
    Keeps track of all parameters and indicates which ones are varying.
+   Refines the implementation of hash of string and ParameterValue.
 */
 
 class ParameterMap  : public std::unordered_map<std::string,  ParameterValue>  {
 public:
 
   /**
-     Creates all parameters and sets them to their default parameters. Users of
-     this code should always be able to consult the list of parameters by
-     examining this method.
-
-     @param parameterMap to create
+      @param setDefaults if true then default parameters are inserted into the
+      parameter map.
   */
-
   ParameterMap(bool setDefaults = true) :
     std::unordered_map<std::string,  ParameterValue>()
   {
     if (setDefaults) setDefaultParameters();
   }
 
+  /**
+     Creates all parameters and sets them to their default parameters. Users of
+     this code should always be able to consult the list of parameters by
+     examining this method.
+  */
   void setDefaultParameters()
   {
     addParameter("SIMULATION_NAME",
@@ -294,14 +310,12 @@ public:
   }
 
   /**
-     Adds a parameter containing one or more doubles to a ParameterMap.
+     Adds a parameter containing one or more doubles
 
-     @param parameterMap ParameterMap to be added to
      @param name key of the parameter
      @param description of the parameter
      @param values of the parameter
   */
-
   void addParameter(const char* name,
                     const char* description,
                     const std::initializer_list<double> values)
@@ -314,9 +328,8 @@ public:
   }
 
   /**
-     Adds a parameter containing a string to a ParameterMap.
+     Adds a parameter containing a string
 
-     @param parameterMap ParameterMap to be added to
      @param name key of the parameter
      @param description of the parameter
      @param strValue of the parameter
@@ -345,6 +358,8 @@ public:
   /**
      Prints the parameter keys and values in a ParameterMap.
 
+     @prefix to print at beginning of parameter output
+     @prefix to print at end of parameter output
      @param printDescription if true
      @param varyingParametersOnly if true prints only parameters that vary
      on each simulation
@@ -375,11 +390,12 @@ public:
   /**
      Replace the value of a parameter with values in a line from a stringstream.
 
-     @param parameterMap ParameterMap to be added to
      @param name key of the parameter
      @param line containing the new values
+     @RangeType whether or not this is a range, and if it is a range, what type
+     @varyWithPrevious if this is a range, whether it varies with the previous
+     range
   */
-
   void replaceParameter(const char* name,
                         std::istringstream& line,
                         const RangeType rangeType,
@@ -424,7 +440,7 @@ public:
     }
   }
 
-
+  /* Used to keep track fo varyingParameters */
   std::vector<std::string>  varyingParameters;
 };
 

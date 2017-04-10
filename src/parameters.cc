@@ -7,7 +7,6 @@
    @param parameterMaps is the vector to populate
 */
 
-
 void readParameters(std::istream& input,
                     std::vector<ParameterMap>& parameterMaps)
 {

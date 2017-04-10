@@ -5,20 +5,37 @@
 
 #include "simulate.hh"
 
-/*
-  Simple command line processing functions taken from:
-  http://stackoverflow.com/questions/865668/parse-command-line-arguments
+/**
+   Finds the argument for a command line option in a stream of characters.
+   Simple command line processing functions taken from:
+   http://stackoverflow.com/questions/865668/parse-command-line-arguments
+
+   @param begin start of character stream to read from
+   @param end of character stream to read from
+   @param option to search for
+
+   @return pointer to argument of command line option, or null if not found
 */
 
-char* getCmdOption(char ** begin, char ** end, const std::string & option)
+char* getCmdOption(char ** begin, char ** end, const std::string& option)
 {
   char ** itr = std::find(begin, end, option);
-  if (itr != end && ++itr != end)
-    {
-      return *itr;
-    }
+  if (itr != end && ++itr != end) return *itr;
   return 0;
 }
+
+/**
+   Looks for a command line option in a stream of characters.
+   Simple command line processing functions taken from:
+   http://stackoverflow.com/questions/865668/parse-command-line-arguments
+
+   @param begin start of character stream to read from
+   @param end of character stream to read from
+   @param option to search for
+
+   @return true if found else false
+*/
+
 
 bool cmdOptionExists(char** begin, char** end, const std::string& option)
 {
