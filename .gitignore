@@ -1,6 +1,6 @@
 # ignore programme binary, object files and dSYM directory
 bin/faststi
-bin/blossom5 # this should be a symlink to your platform-specific binary
+bin/blossom5
 bin/*.o
 bin/faststi.dSYM/
 # ignore test results
