@@ -1,5 +1,9 @@
 # the compiler: gcc for C program, define as g++ for C++
-CXX = g++
+ifeq ($(shell uname),Darwin)
+	CXX = g++-6
+else
+	CXX = g++
+endif
 
 # compiler flags:
 #  -g    adds debugging information to the executable file

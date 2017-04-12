@@ -1,0 +1,6 @@
+# ignore programme binary, object files and dSYM directory
+bin/faststi
+bin/*.o
+bin/faststi.dSYM/
+# ignore test results
+bin/output_*
