@@ -1,0 +1,7 @@
+faststi requires the blossom5 binary. Linux and macOS 64bit binaries are supplied (licensed only for research use).
+
+The source code can be downloaded from http://pub.ist.ac.at/~vnk/software.html#BLOSSOM5
+
+Create a symlink to your platform's binary, e.g.:
+
+ln -s blossom5mac blossom5

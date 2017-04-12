@@ -1,6 +1,15 @@
 # ignore programme binary, object files and dSYM directory
 bin/faststi
+bin/blossom5 # this should be a symlink to your platform-specific binary
 bin/*.o
 bin/faststi.dSYM/
 # ignore test results
 bin/output_*
+
+# ignore R session files
+.RData
+.Rhistory
+
+# ignore files created by fitting
+inputToFaststi.csv
+outputFromFaststi.csv
