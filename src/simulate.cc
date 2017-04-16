@@ -116,15 +116,19 @@ void breakupEvent(Simulation* simulation)
       partner->partner = NULL;
       agent->setSinglePeriod(simulation->currentDate,
                              simulation->shapeSinglePeriodDuring,
-                             simulation->scaleSinglePeriodDuring);
+                             simulation->scaleSinglePeriodDuring,
+                             simulation->probZeroSinglePeriod,
+                             simulation->scaleSinglePeriodZeroDaysDuring);
       partner->setSinglePeriod(simulation->currentDate,
                                simulation->shapeSinglePeriodDuring,
-                               simulation->scaleSinglePeriodDuring);
+                               simulation->scaleSinglePeriodDuring,
+                               simulation->probZeroSinglePeriod,
+                               simulation->scaleSinglePeriodZeroDaysDuring);
       ++breakups;
     }
   }
   if (simulation->printNumBreakups) {
-    printf("%s,BREAKUPS,%u,%.3f,%u\n", simulation->simulationName.c_str(),
+    printf("%s,BREAKUPS,,%u,%.3f,%u\n", simulation->simulationName.c_str(),
            simulation->simulationNum, simulation->currentDate,
            breakups);
   }
@@ -277,20 +281,24 @@ void Simulation::setEvents()
 
 
 void callSimulation(ParameterMap parameterMap,
+                    const SymbolTable& symbolTable,
                     const unsigned parmPrint,
                     const unsigned simulationNum)
 {
+
+  for (auto& symbol : symbolTable.table[simulationNum]) {
+    parameterMap[symbol.first].values = {symbol.second};
+  }
+
   std::string prefix;
   std::string suffix = ",";
-  prefix.append(parameterMap["SIMULATION_NAME"].str());
-  prefix.append(",");
-  prefix.append(std::to_string(simulationNum));
+  prefix.append(parameterMap.at("SIMULATION_NAME").str());
   prefix.append(",");
   // Parameter printing
   if (parmPrint == ALL_PARMS) {
-    parameterMap.print(prefix, suffix);
+    parameterMap.print(simulationNum, prefix, suffix);
   } else if (parmPrint == VARYING_PARMS) {
-    parameterMap.print(prefix, suffix, false, true);
+    parameterMap.print(simulationNum, prefix, suffix, false, true);
   }
 
   Simulation(parameterMap, simulationNum).simulate();
@@ -302,8 +310,8 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
 {
   for (auto& parameterMap: parameterMaps) {
     if (seed == 0) { // Use time
-      parameterMap["RANDOM_SEED"].values = { (double) time(NULL) };
-    } else {
+      parameterMap["RANDOM_SEED"].values = { (double) clock() };
+    } else if (seed != 1) {
       parameterMap["RANDOM_SEED"].values = { (double) seed};
     }
 
@@ -328,10 +336,7 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
       std::vector<std::thread> t(numThreads);
 
       for (unsigned i = 0; i < numThreads; ++i) {
-        for (auto& symbol : symbolTable.table[simulationsRun + i]) {
-          parameterMap[symbol.first].values = {symbol.second};
-        }
-        t[i] = std::thread(callSimulation, parameterMap,
+        t[i] = std::thread(callSimulation, parameterMap, std::ref(symbolTable),
                            parmPrint, simulationsRun + i);
       }
 

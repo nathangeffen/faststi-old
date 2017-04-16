@@ -45,33 +45,47 @@ public:
     size_t index1, index2;
 
     if (sex == MALE) {
-      index1 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_WEIBULL);
+      index1 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_CSV);
       index2 = std::min( (unsigned) partner->age - MIN_AGE,
-                         (unsigned) MAX_AGE_WEIBULL);
+                         (unsigned) MAX_AGE_CSV);
     } else {
-      index2 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_WEIBULL);
+      index2 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_CSV);
       index1 = std::min( (unsigned) partner->age - MIN_AGE,
-                         (unsigned) MAX_AGE_WEIBULL);
+                         (unsigned) MAX_AGE_CSV);
     }
 
     shape = shapeRelationshipPeriod[ index1 ] [ index2 ];
-    scale = scaleRelationshipPeriod[ index1 ] [ index2 ] *
-      scaleModifierRelationshipPeriod;
+    scale = scaleRelationshipPeriod[ index1 ] [ index2 ];
     scale += relationshipPeriodDeviation + partner->relationshipPeriodDeviation;
-    std::weibull_distribution<double> dist(shape, scale);
+    scale *= scaleModifierRelationshipPeriod;
+    std::weibull_distribution<double> dist(shape, std::max(0.0001, scale) );
     double relationshipLength = dist(rng);
     relationshipChangeDate = std::max(currentDate,
                                       currentDate + relationshipLength);
     partner->relationshipChangeDate = relationshipChangeDate;
   }
 
-  void setSinglePeriod(double currentDate,
-                       double shape, double scale)
+  void setSinglePeriod(const double currentDate,
+                       const double shape,
+                       const double scale,
+                       const DblMatrix& probZeroSinglePeriod,
+                       const double probZeroSinglePeriodScale)
   {
-    std::weibull_distribution<double> dist(shape,
-                                           scale + singlePeriodDeviation);
-    relationshipChangeDate = std::max(currentDate,
-                                      currentDate + (double) dist(rng) * DAY);
+    std::uniform_real_distribution<double> uni;
+    unsigned index = std::min( (unsigned) age - MIN_AGE,
+                               (unsigned) MAX_AGE_CSV);
+
+    double prob = probZeroSinglePeriod[index][sex] * probZeroSinglePeriodScale;
+    if (uni(rng) < prob) {
+      relationshipChangeDate = currentDate;
+    } else {
+      std::weibull_distribution<double> dist(shape,
+                                             std::max(scale +
+                                                      singlePeriodDeviation,
+                                                      0.0001));
+      relationshipChangeDate = std::max(currentDate,
+                                        currentDate + (double) dist(rng) * DAY);
+    }
   }
 
   bool isMatchable(const double currentDate) const

@@ -20,7 +20,6 @@ public:
     } else {
       initialValues[name] = range.size() * initialValues[parent];
     }
-
     size_t j = range.size();
     for (size_t i = 0; i < table.size(); ++i) {
       if (parent == std::string("") ||

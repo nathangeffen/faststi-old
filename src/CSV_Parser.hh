@@ -61,6 +61,6 @@ private:
   std::vector<CsvRow *> rows_;
 };
 
-void print_dbl_matrix(const DblMatrix&);
+void printDblMatrix(const DblMatrix&);
 
 #endif

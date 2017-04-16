@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
            "-t: run tests.\n",
            argv[0]);
     ParameterMap parameterMap;
-    parameterMap.print(std::string(""));
+    parameterMap.print(0, std::string(""));
     exit(1);
   }
 

@@ -12,7 +12,9 @@
 #define HOMOSEXUAL 0
 #define HETEROSEXUAL 1
 
-#define MAX_AGE_WEIBULL 27
+#define MAX_AGE_CSV 28
+
+
 
 #define RPM 1
 #define RKPM 2

@@ -165,12 +165,6 @@ public:
     addParameter("PREV_PARTNER_PENALTY",
                  "Previous partner penalty in pair matching", {10.0});
 
-    addParameter("SHAPE_REL_CSV",
-                 "File of shapes for partnership", "data/Rel_shape.csv");
-
-    addParameter("SCALE_REL_CSV",
-                 "File of scales for partnership", "data/Rel_scale.csv");
-
     addParameter("HET_MALE_INFECTIOUSNESS",
                  "Daily risk of infecting for male in heterosexual sex",
                  {0.005});
@@ -280,12 +274,25 @@ public:
                  {1});
 
     // Parameters that may need to be fitted
-    addParameter("SHAPE_SINGLE_PERIOD_INITIAL",
-                 "Weibull shape of single period at begin of simulation",
-                 {0.85});
-    addParameter("SCALE_SINGLE_PERIOD_INITIAL",
-                 "Weibull scale of single period at begin of simulation",
-                 {1200.0});
+    addParameter("SHAPE_SINGLE_PERIOD_INITIAL_MALE",
+                 "Weibull shape of male single period at begin of simulation",
+                 {4.6343145987});
+    addParameter("SCALE_SINGLE_PERIOD_INITIAL_MALE",
+                 "Weibull scale of male single period at begin of simulation",
+                 {31.7380239576});
+    addParameter("SHAPE_SINGLE_PERIOD_INITIAL_FEMALE",
+                 "Weibull shape of female single period at begin of simulation",
+                 {4.9773707649});
+    addParameter("SCALE_SINGLE_PERIOD_INITIAL_FEMALE",
+                 "Weibull scale of female single period at begin of simulation",
+                 {30.953960875});
+    addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL",
+                 "Factor < 1.0 to multiple probability of being single "
+                 "for zero days at initiatilization", {0.0});
+    addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING",
+                 "Factor < 1.0 to multiple probability of being single "
+                 "for zero days during simulation", {1.0});
+
     addParameter("SHAPE_SINGLE_PERIOD_DURING",
                  "Weibull shape of single period during simulation", {0.4});
     addParameter("SCALE_SINGLE_PERIOD_DURING",
@@ -295,14 +302,23 @@ public:
     addParameter("SD_SINGLE_PERIOD",
                  "Standard deviation of single period", {3.0});
 
+    addParameter("PROB_ZERO_DAYS_SINGLE_CSV",
+                 "File of probabilities by age that agents stay single for "
+                 "zero days.", "data/probZeroDays.csv");
+
     addParameter("SCALE_RELATIONSHIP_PERIOD_INITIAL",
-                 "Multiple relationship scale parameters by this", {1.0 / 3.0});
+                 "Multiply relationship scale parameters by this", {1.0 / 3.0});
     addParameter("SCALE_RELATIONSHIP_PERIOD_DURING",
-                 "Multiple relationship scale parameters by this", {1.0});
+                 "Multiply relationship scale parameters by this", {1.0});
     addParameter("MEAN_RELATIONSHIP_PERIOD",
                  "Mean difference from expected relationship period.", {0});
     addParameter("SD_RELATIONSHIP_PERIOD",
                  "Standard deviation of relationship period.", {3.0});
+
+    addParameter("SHAPE_REL_CSV",
+                 "File of shapes for partnership", "data/Rel_shape.csv");
+    addParameter("SCALE_REL_CSV",
+                 "File of scales for partnership", "data/Rel_scale.csv");
 
     addParameter("PROB_INFECTED_IF_PARTNER",
                  "Probability on initialization of an agent being infected "
@@ -364,18 +380,19 @@ public:
      @param varyingParametersOnly if true prints only parameters that vary
      on each simulation
   */
-  void print(const std::string& prefix,
+  void print(const unsigned simulationNum,
+             const std::string& prefix,
              const std::string& suffix = "",
              const bool printDescription = true,
-             const bool varyingParametersOnly = false)
+             const bool varyingParametersOnly = false) const
   {
     for (auto& p: (*this)) {
       std::ostringstream oss;
       if (varyingParametersOnly && p.second.isVaryingRange == false) continue;
       oss << prefix;
-      oss << "PARAMETER," << p.first;
+      oss << "PARAMETER," << p.first << "," << simulationNum;
       if (printDescription) {
-        oss << "\"" << p.second.description << "\"";
+        oss << ",\"" << p.second.description << "\"";
       }
       if (p.second.isString) {
         oss << "," << p.second.strValue;

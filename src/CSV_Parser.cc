@@ -1,6 +1,6 @@
 #include "CSV_Parser.hh"
 
-void print_dbl_matrix(const DblMatrix& dblMatrix)
+void printDblMatrix(const DblMatrix& dblMatrix)
 {
   for (auto& r: dblMatrix) {
     for (auto &d: r)

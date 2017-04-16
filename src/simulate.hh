@@ -61,8 +61,8 @@ public:
       ? true : false;
 
     // Initialize thread local random number generator
-    unsigned seed = parameterMap.at("RANDOM_SEED").dbl();
-    if (seed) rng.seed(seed * simulationNum);
+    unsigned seed = parameterMap.at("RANDOM_SEED").dbl() * (simulationNum + 1);
+    if (seed) rng.seed(seed);
 
     // Setup the events for this simulation
     setEvents();
@@ -97,10 +97,18 @@ public:
       parameterMap.at("HOM_FEMALE_INFECTIOUSNESS").dbl();
 
     // Single period parameters
-    shapeSinglePeriodInitial =
-      parameterMap.at("SHAPE_SINGLE_PERIOD_INITIAL").dbl();
-    scaleSinglePeriodInitial =
-      parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL").dbl();
+    shapeSinglePeriodInitialMale =
+      parameterMap.at("SHAPE_SINGLE_PERIOD_INITIAL_MALE").dbl();
+    scaleSinglePeriodInitialMale =
+      parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL_MALE").dbl();
+    shapeSinglePeriodInitialFemale =
+      parameterMap.at("SHAPE_SINGLE_PERIOD_INITIAL_FEMALE").dbl();
+    scaleSinglePeriodInitialFemale =
+      parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL_FEMALE").dbl();
+    scaleSinglePeriodZeroDaysInitial =
+      parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL").dbl();
+    scaleSinglePeriodZeroDaysDuring =
+      parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING").dbl();
     shapeSinglePeriodDuring =
       parameterMap.at("SHAPE_SINGLE_PERIOD_DURING").dbl();
     scaleSinglePeriodDuring =
@@ -139,6 +147,9 @@ public:
     wswAgeDist = matrixFromCSV("WSW_AGE_DIST_CSV", ",", true);
     mswAgeDist = matrixFromCSV("MSW_AGE_DIST_CSV", ",", true);
     wsmAgeDist = matrixFromCSV("WSM_AGE_DIST_CSV", ",", true);
+
+    // Probability single period is zero
+    probZeroSinglePeriod = matrixFromCSV("PROB_ZERO_DAYS_SINGLE_CSV", ",", true);
 
     // Weibull parameters per age for setting relationship length
     shapeRelationshipPeriod = matrixFromCSV("SHAPE_REL_CSV", ",", true);
@@ -231,7 +242,6 @@ public:
     DblMatrix mw = matrixFromCSV("MSW_DATA_CSV", ";", false);
     DblMatrix wm = matrixFromCSV("WSM_DATA_CSV", ";", false);
 
-
     assert(singles.size());
 
     // Calculate initial infection rates matrices
@@ -279,7 +289,8 @@ public:
       parameterMap.at("SCALE_RELATIONSHIP_PERIOD_INITIAL").dbl();
 
     // Create the single agents
-    createAgents(agents, demographics, 0, S,
+    createAgents(agents,
+                 0, S,
                  ageRange, ageShare, femRatio,
                  wswRate, msmRate, ww, mw, wm, mm,
                  initialInfectionRatesMSW, initialInfectionRatesMSM,
@@ -293,7 +304,8 @@ public:
     wswRate = getCol(partners, 4);
 
     // Create the paired agents and their partners
-    createAgents(agents, demographics, S, X,
+    createAgents(agents,
+                 S, X,
                  ageRange, ageShare, femRatio,
                  wswRate, msmRate, ww, mw, wm, mm,
                  initialInfectionRatesMSW, initialInfectionRatesMSM,
@@ -374,7 +386,6 @@ public:
   }
 
   void createAgents(AgentVector& agents,
-                    const DblMatrix& data,
                     const unsigned fromAgent,
                     const unsigned toAgent,
                     const std::vector<double>& ageRange,
@@ -393,10 +404,6 @@ public:
                     bool initial_relation)
   {
     std::uniform_real_distribution<double> uni;
-    double shapeSinglePeriodInitial =
-      parameterMap.at("SHAPE_SINGLE_PERIOD_INITIAL").dbl();
-    double scaleSinglePeriodInitial =
-      parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL").dbl();
     Sample sample_ageshare(ageShare, &rng);
     vector<Sample> sample_matWW(matWW[0].size());
     vector<Sample> sample_matMW(matMW[0].size());
@@ -479,8 +486,19 @@ public:
           conditionalInfectPartner(agent);
         }
       } else {
-        agent->setSinglePeriod(currentDate, shapeSinglePeriodInitial,
-                               scaleSinglePeriodInitial);
+        if (agent->sex == MALE) {
+          agent->setSinglePeriod(currentDate,
+                                 shapeSinglePeriodInitialMale,
+                                 scaleSinglePeriodInitialMale,
+                                 probZeroSinglePeriod,
+                                 scaleSinglePeriodZeroDaysInitial);
+        } else {
+          agent->setSinglePeriod(currentDate,
+                                 shapeSinglePeriodInitialFemale,
+                                 scaleSinglePeriodInitialFemale,
+                                 probZeroSinglePeriod,
+                                 scaleSinglePeriodZeroDaysInitial);
+        }
       }
       agents.push_back(agent);
       if (agent->partner) agents.push_back(agent->partner);
@@ -561,7 +579,7 @@ public:
     // Remove back agent if odd
     if (matingPool.size() % 2 == 1) matingPool.pop_back();
     if (printNumMatings) {
-      printf("%s,MATINGPOOL,%u,%.3f,%lu\n", simulationName.c_str(),
+      printf("%s,MATINGPOOL,,%u,%.3f,%lu\n", simulationName.c_str(),
              simulationNum, currentDate, matingPool.size());
     }
     return matingPool;
@@ -710,18 +728,18 @@ public:
   double tableDistance(const Agent *a, const Agent *b) const
   {
     double score = 0.0;
-    unsigned a_age = a->age - MIN_AGE;
-    unsigned b_age = b->age - MIN_AGE;
+    unsigned a_age = std::min( (unsigned) a->age, (unsigned) MAX_AGE) - MIN_AGE;
+    unsigned b_age = std::min( (unsigned) b->age,  (unsigned) MAX_AGE) - MIN_AGE;
 
-    if (a->sex == MALE and b->sex == FEMALE)
+    if (a->sex == MALE and b->sex == FEMALE) {
       score += (mswAgeDist[a_age][b_age] + wsmAgeDist[b_age][a_age]) * 25;
-    else if (a->sex == FEMALE and b->sex == MALE)
+    } else if (a->sex == FEMALE and b->sex == MALE) {
       score += (wsmAgeDist[a_age][b_age] + mswAgeDist[b_age][a_age]) * 25;
-    else if (a->sex == MALE and b->sex == MALE)
+    } else if (a->sex == MALE and b->sex == MALE) {
       score += (msmAgeDist[a_age][b_age] + msmAgeDist[b_age][a_age]) * 25;
-    else if (a->sex == FEMALE and b->sex == FEMALE)
+    } else if (a->sex == FEMALE and b->sex == FEMALE) {
       score += (wswAgeDist[a_age][b_age] + wswAgeDist[b_age][a_age]) * 25;
-    else {
+    } else {
       throw std::runtime_error("Unknown sex combination");
     }
 
@@ -759,8 +777,10 @@ public:
   double endDate;
   double timeStep;
 
-  double shapeSinglePeriodInitial;
-  double scaleSinglePeriodInitial;
+  double shapeSinglePeriodInitialMale;
+  double scaleSinglePeriodInitialMale;
+  double shapeSinglePeriodInitialFemale;
+  double scaleSinglePeriodInitialFemale;
   double shapeSinglePeriodDuring;
   double scaleSinglePeriodDuring;
   double meanSinglePeriodDeviation;
@@ -823,6 +843,10 @@ public:
   DblMatrix wsmAgeDist;
   DblMatrix msmAgeDist;
   DblMatrix wswAgeDist;
+  DblMatrix probZeroSinglePeriod;
+  double scaleSinglePeriodZeroDaysInitial;
+  double scaleSinglePeriodZeroDaysDuring;
+
   std::vector< std::function<void(Simulation*)> > events;
 };
 
