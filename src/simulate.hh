@@ -17,6 +17,7 @@
 #include <cfloat>
 #include <climits>
 #include <cstdint>
+#include <cstring>
 #include <sys/time.h>
 
 #include <boost/algorithm/string.hpp>
@@ -39,6 +40,19 @@ void setInitialInfection(Agent&,
 void execSimulationSet(std::vector<ParameterMap>, unsigned);
 void runTests(ParameterMap&);
 
+struct AgeStatistics {
+  AgeStatistics() {
+    const size_t SIZE_TO_FREE = (unsigned) NUM_INTERVALS * sizeof(unsigned);
+    memset(malesByAge, 0, SIZE_TO_FREE);
+    memset(femalesByAge, 0, SIZE_TO_FREE);
+    memset(infectedMalesByAge, 0, SIZE_TO_FREE);
+    memset(infectedFemalesByAge, 0, SIZE_TO_FREE);
+  }
+  unsigned malesByAge[NUM_INTERVALS];
+  unsigned femalesByAge[NUM_INTERVALS];
+  unsigned infectedMalesByAge[NUM_INTERVALS];
+  unsigned infectedFemalesByAge[NUM_INTERVALS];
+};
 
 class Simulation {
 public:
@@ -51,8 +65,8 @@ public:
     startDate = parameterMap.at("START_DATE").dbl();
     endDate = parameterMap.at("END_DATE").dbl();
     timeStep = parameterMap.at("TIME_STEP").dbl();
-    currentDate = startDate;
-    ageInterval = parameterMap.at("ANALYSIS_AGE_INTERVAL").dbl();
+    stabilizationSteps = parameterMap.at("STABILIZATION_STEPS").dbl();
+    currentDate = startDate - (double) stabilizationSteps * timeStep;
     failureThresholdScore = parameterMap.at("MATCH_SCORE_FAIL").dbl();
     poorThresholdScore = parameterMap.at("MATCH_SCORE_POOR").dbl();
     printNumBreakups = (parameterMap.at("OUTPUT_NUM_BREAKUPS").dbl() > 0.0)
@@ -78,11 +92,6 @@ public:
   virtual void initSimulation()
   {
     // Structures to track demographics and infections by age structure
-    unsigned numIntervals = (MAX_AGE + 1) / ageInterval + 1;
-    malesByAge = std::vector<unsigned>(numIntervals, 0);
-    femalesByAge = std::vector<unsigned>(numIntervals, 0);
-    infectedMalesByAge = std::vector<unsigned>(MAX_AGE + 1, 0);
-    infectedFemalesByAge = std::vector<unsigned>(MAX_AGE + 1, 0);
 
     // Matching algorithm parameters
     neighbors = parameterMap.at("MATCH_NEIGHBORS").dbl();
@@ -171,27 +180,33 @@ public:
       printf("%s,TIMING,INIT,%u,%f\n", simulationName.c_str(),
              simulationNum, elapsedTime);
     }
-    unsigned outputAgents = parameterMap.at("OUTPUT_AGENTS_AFTER_INIT").dbl();
-    if (outputAgents) printAgents(agents, simulationNum, startDate, stdout);
-    /********************/
-    /* Count WSW */
-    unsigned wswcount = 0;
-    for (auto& a: agents) {
-      if (a->sex == FEMALE && a->sexual_orientation == HOMOSEXUAL) ++wswcount;
+    if (parameterMap.at("OUTPUT_AGENTS_AFTER_INIT").isSet()) {
+      printAgents(agents, simulationNum, startDate, stdout);
     }
-    /*******************/
-    unsigned analyzeAgents = parameterMap.at("ANALYZE_AFTER_INIT").dbl();
-    if (analyzeAgents) analysis();
-    /* Main loop */
+    if (parameterMap.at("ANALYZE_AFTER_INIT").isSet()) {
+      analysis(true, true, false);
+    }
 
+    /* Main loop */
     // Make sure main loop uses integer arithmetic, rather than floats
     // though probably makes little diff.
-    unsigned num_iterations = (endDate - startDate) / timeStep;
-    outputAgents = parameterMap.at("OUTPUT_AGENTS_DURING_SIM").dbl(0);
+    unsigned numIterations =
+      ( (endDate - startDate) / timeStep ) + stabilizationSteps;
+#ifdef DEBUG
+    if (parameterMap.at("PRINT_NUM_ITERATIONS_AND_EXIT").isSet()) {
+      fprintf(stderr, "Number of iterations: %u\n", numIterations);
+      exit(1);
+    }
+#endif
+    unsigned outputAgents = parameterMap.at("OUTPUT_AGENTS_DURING_SIM").dbl(0);
     unsigned outputFrequency =
       parameterMap.at("OUTPUT_AGENTS_DURING_SIM").dbl(1);
+    bool analyzeAfterStabilization =
+      parameterMap.at("ANALYZE_AFTER_STABILIZATION").isSet();
     unsigned analyzeFrequency = parameterMap.at("ANALYZE_DURING_SIM").dbl();
-    for (unsigned i = 0; i < num_iterations; ++i, currentDate += timeStep) {
+    unsigned outputAgentsAfterStabilization =
+      parameterMap.at("OUTPUT_AGENTS_AFTER_STABILIZATION").dbl();
+    for (unsigned i = 0; i < numIterations; ++i, currentDate += timeStep) {
       for (auto& e: events) e(this);
       if (timing > 0 && (i + 1) % timing == 0) {
         gettimeofday(&timeEnd, NULL);
@@ -199,9 +214,18 @@ public:
         printf("%s,TIMING,%u,%u,%f\n",
                simulationName.c_str(), i, simulationNum, elapsedTime);
       }
-      if (outputAgents > 0 && (i + 1) % outputFrequency == 0)
+      if (outputAgents > 0 && (i + 1) % outputFrequency == 0) {
         printAgents(agents, simulationNum, currentDate, stdout);
-      if (analyzeFrequency && (i + 1) % analyzeFrequency == 0) analysis();
+      }
+      if ( stabilizationSteps > 0 && stabilizationSteps == i) {
+        if (analyzeAfterStabilization) analysis(true, true, true);
+        if (outputAgentsAfterStabilization) {
+          printAgents(agents, simulationNum, currentDate, stdout);
+        }
+      } else if (analyzeFrequency &&
+                 (i + 1) % analyzeFrequency == 0) {
+        analysis();
+      }
     }
 
     gettimeofday(&timeEnd, NULL);
@@ -214,8 +238,9 @@ public:
     /* Wrap up */
     outputAgents = parameterMap.at("OUTPUT_AGENTS_AT_END").dbl();
     if (outputAgents) printAgents(agents, simulationNum, endDate, stdout);
-    analyzeAgents = parameterMap.at("ANALYZE_AT_END").dbl();
-    if (analyzeAgents) analysis();
+    if ( (unsigned) parameterMap.at("ANALYZE_AT_END").isSet()) {
+      analysis(true, true, true);
+    }
   }
 
 
@@ -343,7 +368,8 @@ public:
 
     // Age
     unsigned age = sampleAgeshare() + 12;
-    agent->age = age;
+    // Add a random part of the year onto the age
+    agent->age = age + uni(rng) * YEAR;
     // Sex
     unsigned sex = uni(rng) < femRatio[age - 12] ? FEMALE : MALE;
     agent->sex = sex;
@@ -508,17 +534,14 @@ public:
   void calculateDemographics()
   {
     for (unsigned i = 0; i < agents.size(); ++i) {
-      unsigned age = agents[i]->age;
       if (agents[i]->sex == MALE) {
         ++numMales;
-        ++malesByAge[age / ageInterval];
         if (agents[i]->sexual_orientation == HETEROSEXUAL)
           ++numMsw;
         else
           ++numMsm;
         if (agents[i]->infected) {
           ++numInfectedMales;
-          ++infectedMalesByAge[age / ageInterval];
           if (agents[i]->sexual_orientation == HETEROSEXUAL)
             ++numInfectedMsw;
           else
@@ -526,14 +549,12 @@ public:
         }
       } else {
         ++numFemales;
-        ++femalesByAge[age /  ageInterval];
         if (agents[i]->sexual_orientation == HETEROSEXUAL)
           ++numWsm;
         else
           ++numWsw;
         if (agents[i]->infected) {
           ++numInfectedFemales;
-          ++infectedFemalesByAge[age / ageInterval];
           if (agents[i]->sexual_orientation == HETEROSEXUAL)
             ++numInfectedWsm;
           else
@@ -547,14 +568,12 @@ public:
   {
     if (agent->sex == MALE) {
       ++numInfectedMales;
-      ++infectedMalesByAge[ (int) agent->age / ageInterval];
       if (agent->sexual_orientation == HETEROSEXUAL)
         ++numInfectedMsw;
       else
         ++numInfectedMsm;
     } else {
       ++numInfectedFemales;
-      ++infectedFemalesByAge[ (int) agent->age / ageInterval];
       if (agent->sexual_orientation == HETEROSEXUAL)
         ++numInfectedWsm;
       else
@@ -606,7 +625,9 @@ public:
   }
 
 
-  void analysis()
+  void analysis(bool orientationStats = false,
+                bool ageStats = false,
+                bool scoreStats = false)
   {
     double prevalence = (double) (numInfectedMales + numInfectedFemales) /
       (numMales + numFemales);
@@ -615,58 +636,94 @@ public:
     double msmPrevalence = (double) numInfectedMsm / numMsm;
     double wswPrevalence = (double) numInfectedWsw / numWsw;
 
+    // Do whenever we call analysis
     printf("%s,ANALYSIS,INFECTED,%d,%.3f,%u\n",
            simulationName.c_str(), simulationNum, currentDate,
            numInfectedMales + numInfectedFemales);
     printf("%s,ANALYSIS,PREVALENCE,%d,%.3f,%f\n",
            simulationName.c_str(), simulationNum, currentDate, prevalence);
-    printf("%s,ANALYSIS,MALEPREVALENCE,%d,%.3f,%f\n",
-           simulationName.c_str(),simulationNum, currentDate, malePrevalence);
-    printf("%s,ANALYSIS,FEMALEPREVALENCE,%d,%.3f,%f\n",
-           simulationName.c_str(),simulationNum, currentDate, femalePrevalence);
-    printf("%s,ANALYSIS,MSMPREVALENCE,%d,%.3f,%f\n",
-           simulationName.c_str(),simulationNum, currentDate, msmPrevalence);
-    printf("%s,ANALYSIS,WSWPREVALENCE,%d,%.3f,%f\n",
-           simulationName.c_str(),simulationNum, currentDate, wswPrevalence);
     printf("%s,ANALYSIS,PARTNERSHIPS,%d,%.3f,%u\n",
            simulationName.c_str(),simulationNum, currentDate, totalPartnerships);
-    printf("%s,ANALYSIS,MSMPARTNERSHIPS,%d,%.3f,%u\n",
-           simulationName.c_str(),simulationNum, currentDate,
-           totalMsmPartnerships);
-    printf("%s,ANALYSIS,WSWPARTNERSHIPS,%d,%.3f,%u\n",
-           simulationName.c_str(), simulationNum, currentDate,
-           totalWswPartnerships);
 
-    for (unsigned i = 0; i < malesByAge.size(); ++i) {
-      ostringstream ssmale, ssfemale;
-      if (malesByAge[i] == 0)
-        ssmale << "NA";
-      else
-        ssmale << std::setprecision(3)
-               << ( (double) infectedMalesByAge[i] / malesByAge[i] );
-      if (femalesByAge[i] == 0)
-        ssfemale << "NA";
-      else
-        ssfemale << std::setprecision(3)
-                 << ((double) infectedFemalesByAge[i] / femalesByAge[i]);
-      printf("%s,ANALYSIS,MALE_AGE_%03u-%03u,%d,%.3f,%s\n",
-             simulationName.c_str(),
-             i * ageInterval, i * ageInterval + ageInterval - 1,
-             simulationNum, currentDate, ssmale.str().c_str());
-      printf("%s,ANALYSIS,FEMALE_AGE_%03u-%03u,%d,%.3f,%s\n",
-             simulationName.c_str(),
-             i * ageInterval, i * ageInterval + ageInterval - 1,
-             simulationNum, currentDate, ssfemale.str().c_str());
+    if (orientationStats) {
+      printf("%s,ANALYSIS,MALEPREVALENCE,%d,%.3f,%f\n",
+             simulationName.c_str(),simulationNum, currentDate, malePrevalence);
+      printf("%s,ANALYSIS,FEMALEPREVALENCE,%d,%.3f,%f\n",
+             simulationName.c_str(),simulationNum, currentDate,
+             femalePrevalence);
+      printf("%s,ANALYSIS,MSMPREVALENCE,%d,%.3f,%f\n",
+             simulationName.c_str(),simulationNum, currentDate, msmPrevalence);
+      printf("%s,ANALYSIS,WSWPREVALENCE,%d,%.3f,%f\n",
+             simulationName.c_str(),simulationNum, currentDate, wswPrevalence);
+
+      printf("%s,ANALYSIS,MSMPARTNERSHIPS,%d,%.3f,%u\n",
+             simulationName.c_str(),simulationNum, currentDate,
+             totalMsmPartnerships);
+      printf("%s,ANALYSIS,WSWPARTNERSHIPS,%d,%.3f,%u\n",
+             simulationName.c_str(), simulationNum, currentDate,
+             totalWswPartnerships);
     }
-    printf("%s,ANALYSIS,SCORE,%d,%.3f,%f\n",
-           simulationName.c_str(), simulationNum, currentDate,
-           totalPartnershipScore / totalPartnerships);
-    printf("%s,ANALYSIS,FAILED,%d,%.3f,%u\n",
-           simulationName.c_str(), simulationNum, currentDate, failedMatches);
-    printf("%s,ANALYSIS,POOR,%d,%.3f,%u\n",
-           simulationName.c_str(), simulationNum, currentDate, poorMatches);
+
+    if (ageStats) {
+      struct AgeStatistics a;
+      calculateAgeStatistics(a);
+
+      for (unsigned i = 0; i < NUM_INTERVALS; ++i) {
+        printf("%s,ANALYSIS,MALE_AGE_%03u-%03u,%d,%.3f,%u\n",
+               simulationName.c_str(),
+               i * AGE_INTERVAL, i * AGE_INTERVAL + AGE_INTERVAL - 1,
+               simulationNum, currentDate, a.malesByAge[i]);
+        printf("%s,ANALYSIS,FEMALE_AGE_%03u-%03u,%d,%.3f,%u\n",
+               simulationName.c_str(),
+               i * AGE_INTERVAL, i * AGE_INTERVAL + AGE_INTERVAL - 1,
+               simulationNum, currentDate, a.femalesByAge[i]);
+        ostringstream ssmale, ssfemale;
+        if (a.malesByAge[i] == 0)
+          ssmale << "NA";
+        else
+          ssmale << std::setprecision(3)
+                 << ( (double) a.infectedMalesByAge[i] / a.malesByAge[i] );
+        if (a.femalesByAge[i] == 0)
+          ssfemale << "NA";
+        else
+          ssfemale << std::setprecision(3)
+                   << ((double) a.infectedFemalesByAge[i] / a.femalesByAge[i]);
+        printf("%s,ANALYSIS,MALE_PREVALENCE_AGE_%03u-%03u,%d,%.3f,%s\n",
+               simulationName.c_str(),
+               i * AGE_INTERVAL, i * AGE_INTERVAL + AGE_INTERVAL - 1,
+               simulationNum, currentDate, ssmale.str().c_str());
+        printf("%s,ANALYSIS,FEMALE_PREVALENCE_AGE_%03u-%03u,%d,%.3f,%s\n",
+               simulationName.c_str(),
+               i * AGE_INTERVAL, i * AGE_INTERVAL + AGE_INTERVAL - 1,
+               simulationNum, currentDate, ssfemale.str().c_str());
+      }
+    }
+
+    if (scoreStats) {
+      printf("%s,ANALYSIS,SCORE,%d,%.3f,%f\n",
+             simulationName.c_str(), simulationNum, currentDate,
+             totalPartnershipScore / totalPartnerships);
+      printf("%s,ANALYSIS,FAILED,%d,%.3f,%u\n",
+             simulationName.c_str(), simulationNum, currentDate, failedMatches);
+      printf("%s,ANALYSIS,POOR,%d,%.3f,%u\n",
+             simulationName.c_str(), simulationNum, currentDate, poorMatches);
+    }
   }
 
+  void calculateAgeStatistics(AgeStatistics& a)
+  {
+    for (unsigned i = 0; i < agents.size(); ++i) {
+      unsigned age = agents[i]->age;
+      unsigned interval = age / AGE_INTERVAL;
+      if (agents[i]->sex == MALE) {
+        ++a.malesByAge[interval];
+        if (agents[i]->infected) ++a.infectedMalesByAge[interval];
+      } else {
+        ++a.femalesByAge[interval];
+        if (agents[i]->infected) ++a.infectedFemalesByAge[interval];
+      }
+    }
+  }
 
   void makePartner(Agent* a, Agent *b,
                    const double score)
@@ -766,12 +823,13 @@ public:
 
   virtual void setEvents();
 
+  // Simulation Variables
+
   std::string simulationName;
   AgentVector agents;
   Partnerships partnerships;
   ParameterMap parameterMap;
   unsigned simulationNum;
-  unsigned ageInterval;
   unsigned distanceMethod;
   double startDate;
   double endDate;
@@ -803,6 +861,8 @@ public:
   double failureThresholdScore;
   double poorThresholdScore;
   double totalPartnershipScore = 0.0;
+
+  unsigned stabilizationSteps;
   unsigned clusters;
   unsigned neighbors;
   unsigned totalBreakups = 0;
@@ -832,10 +892,6 @@ public:
   unsigned numInfectedLongBreakLongPartnership = 0;
   unsigned poorMatches = 0;
   unsigned failedMatches = 0;
-  std::vector<unsigned> malesByAge;
-  std::vector<unsigned> femalesByAge;
-  std::vector<unsigned> infectedMalesByAge;
-  std::vector<unsigned> infectedFemalesByAge;
 
   DblMatrix shapeRelationshipPeriod;
   DblMatrix scaleRelationshipPeriod;

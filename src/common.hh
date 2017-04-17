@@ -3,9 +3,13 @@
 
 #include <random>
 
-#define DAY 1.0 / 365
+#define YEAR 1.0
+#define DAY (YEAR / 365)
 #define MIN_AGE 12
 #define MAX_AGE 100
+#define AGE_INTERVAL 5
+#define NUM_INTERVALS ( (MAX_AGE + 1) / AGE_INTERVAL + 1 )
+
 
 #define FEMALE 0
 #define MALE 1
@@ -13,8 +17,7 @@
 #define HETEROSEXUAL 1
 
 #define MAX_AGE_CSV 28
-
-
+#define EPSILON 0.000001
 
 #define RPM 1
 #define RKPM 2

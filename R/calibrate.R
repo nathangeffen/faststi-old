@@ -9,10 +9,10 @@ getbreakups <- function(index)
 }
 
 
-inp = read.csv("tmp2.csv", FALSE)
+inp = read.csv("tmp.csv", FALSE)
 parameters = inp[grep("PARAMETER",inp$V2),]
-matingpool = inp[grep("MATINGPOOL",inp$V2),]
-breakups = inp[grep("BREAKUPS",inp$V2),]
+matingpool = inp[inp$V2=="MATINGPOOL" & inp$V5>=2017.0,]
+breakups = inp[inp$V2=="BREAKUPS" & inp$V5>=2017.0,]
 
 sd_matingpool =  aggregate(matingpool$V6, by=list(matingpool$V4), FUN=sd)
 sim_num = which(sd_matingpool$x==min(sd_matingpool$x)) - 1

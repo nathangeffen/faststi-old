@@ -154,10 +154,13 @@ public:
                  "Number of simulations to execute (default is 1)", {1});
     addParameter("NUM_THREADS",
                  "Number of threads (default is one per simulation - 0)", {0});
-    addParameter("NUM_AGENTS", "Number of agents", {100.0});
+    addParameter("NUM_AGENTS", "Number of agents", {1000.0});
 
     addParameter("START_DATE",
                  "Start date of simulation", {2017.0});
+    addParameter("STABILIZATION_STEPS",
+                 "Number of time steps to allow simulation to run before start  "
+                 "date in order for simulations to stabilise.", {0});
     addParameter("END_DATE",
                  "End date of simulation", {2018.0});
     addParameter("TIME_STEP",
@@ -193,6 +196,9 @@ public:
     addParameter("OUTPUT_AGENTS_AFTER_INIT",
                  "Print agent info after initialization"
                  "(0=no,1=yes)", {0.0});
+    addParameter("OUTPUT_AGENTS_AFTER_STABILIZATION",
+                 "Print agent info after stabilization"
+                 "(0=no,1=yes)", {0.0});
     addParameter("OUTPUT_AGENTS_DURING_SIM",
                  "Print agent info during simulation"
                  "(0=no,1=yes), (frequency of output)", {0.0, 100.0});
@@ -200,11 +206,10 @@ public:
                  "Print agent info at end of simulation "
                  "(0=no,1=yes)", {0.0});
 
-    addParameter("ANALYSIS_AGE_INTERVAL",
-                 "Length of age intervals for infection analysis", {5.0});
     addParameter("ANALYZE_AFTER_INIT",
-                 "Calculate stats after initialization"
-                 "(0=no,1=yes)", {1.0});
+                 "Calculate stats after initialization", {1});
+    addParameter("ANALYZE_AFTER_STABILIZATION",
+                 "Calculate stats after initialization", {1});
     addParameter("ANALYZE_DURING_SIM",
                  "Calculate stats during simulation"
                  "(frequency of output, 0 for never)", {0});
@@ -256,12 +261,13 @@ public:
     addParameter("INFECT_EVENT", "Execute the infection event", {1});
     addParameter("BREAKUP_EVENT",
                  "Execute the infection event", {1});
+
     addParameter("OUTPUT_NUM_BREAKUPS",
-                 "Print number of breakups on every time step", {1});
+                 "Print number of breakups on every time step", {0});
     addParameter("MATCH_EVENT",
                  "Execute the infection event (RPM,RKPM,CSPM)", "RPM");
     addParameter("OUTPUT_NUM_MATINGPOOL",
-                 "Print number in mating pool on every time step", {1});
+                 "Print number in mating pool on every time step", {0});
     addParameter("DISTANCE_METHOD",
                  "Distance calculation to use (HEURISTIC,TABLE)", "HEURISTIC");
 
@@ -323,6 +329,14 @@ public:
     addParameter("PROB_INFECTED_IF_PARTNER",
                  "Probability on initialization of an agent being infected "
                  "if its partner is infected", {0.5});
+
+    // DEBUGGING - IGNORED IN RELEASE MODE
+
+    addParameter("PRINT_NUM_ITERATIONS_AND_EXIT",
+                 "Calculates number of iterations in simulation and exits", {0});
+    addParameter("PRINT_SYMBOL_TABLE_SIZE_AND_EXIT",
+                 "Calculates number of iterations in simulation and exits", {0});
+
   }
 
   /**

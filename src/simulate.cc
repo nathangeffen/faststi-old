@@ -69,7 +69,11 @@ void setInitialInfection(Agent &agent,
 
 void ageEvent(Simulation* simulation)
 {
-  for (auto& agent : simulation->agents) agent->age += simulation->timeStep;
+  if ( (simulation->currentDate + EPSILON)  >= simulation->startDate) {
+    for (auto& agent : simulation->agents) {
+      agent->age += simulation->timeStep;
+    }
+  }
 }
 
 void infectEvent(Simulation* simulation)
@@ -109,7 +113,7 @@ void breakupEvent(Simulation* simulation)
   unsigned breakups = 0;
   for (auto& agent: simulation->agents) {
     if (agent->partner &&
-        ( (simulation->currentDate + DAY / 2.0) >=
+        ( (simulation->currentDate + EPSILON) >=
           agent->relationshipChangeDate) ) {
       Agent* partner = agent->partner;
       agent->partner = NULL;
@@ -283,25 +287,28 @@ void Simulation::setEvents()
 void callSimulation(ParameterMap parameterMap,
                     const SymbolTable& symbolTable,
                     const unsigned parmPrint,
-                    const unsigned simulationNum)
+                    const unsigned simulationFrom,
+                    const unsigned simulationTo)
 {
 
-  for (auto& symbol : symbolTable.table[simulationNum]) {
-    parameterMap[symbol.first].values = {symbol.second};
-  }
+  for (unsigned i = simulationFrom; i < simulationTo; ++i) {
+    for (auto& symbol : symbolTable.table[i]) {
+      parameterMap[symbol.first].values = {symbol.second};
+    }
 
-  std::string prefix;
-  std::string suffix = ",";
-  prefix.append(parameterMap.at("SIMULATION_NAME").str());
-  prefix.append(",");
-  // Parameter printing
-  if (parmPrint == ALL_PARMS) {
-    parameterMap.print(simulationNum, prefix, suffix);
-  } else if (parmPrint == VARYING_PARMS) {
-    parameterMap.print(simulationNum, prefix, suffix, false, true);
-  }
+    std::string prefix;
+    std::string suffix = ",";
+    prefix.append(parameterMap.at("SIMULATION_NAME").str());
+    prefix.append(",");
+    // Parameter printing
+    if (parmPrint == ALL_PARMS) {
+      parameterMap.print(i, prefix, suffix);
+    } else if (parmPrint == VARYING_PARMS) {
+      parameterMap.print(i, prefix, suffix, false, true);
+    }
 
-  Simulation(parameterMap, simulationNum).simulate();
+    Simulation(parameterMap, i).simulate();
+  }
 }
 
 
@@ -315,35 +322,48 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
       parameterMap["RANDOM_SEED"].values = { (double) seed};
     }
 
-    unsigned numThreads = parameterMap.at("NUM_THREADS").dbl();
-    unsigned numSimulations = parameterMap.at("NUM_SIMULATIONS").dbl();
-    if (numThreads == 0) numThreads = numSimulations;
-    unsigned simulationsRun = 0;
-
     // Construct symbol table
+    unsigned numSimulations = parameterMap.at("NUM_SIMULATIONS").dbl();
     SymbolTable symbolTable(numSimulations);
     for (auto& p: parameterMap.varyingParameters) {
       auto parameter = parameterMap.at(p);
       symbolTable.addSymbol(p, parameter.parentParameter, parameter.values);
     }
 
+#ifdef DEBUG
+    if (parameterMap.at("PRINT_SYMBOL_TABLE_SIZE_AND_EXIT").isSet()) {
+      size_t cycleLength = 0;
+      for (auto& e: symbolTable.initialValues) {
+          if (e.second > cycleLength) cycleLength = e.second;
+      }
+      fprintf(stderr, "Symbol table cycle length: %lu\n", cycleLength);
+      exit(1);
+    }
+#endif
+
     // Needed for parameter printing
     unsigned parmPrint = (unsigned) parameterMap.at("PRINT_PARAMETERS").dbl();
 
-    while(simulationsRun < numSimulations) {
-      if (simulationsRun + numThreads > numSimulations)
-        numThreads = numSimulations - simulationsRun;
-      std::vector<std::thread> t(numThreads);
 
-      for (unsigned i = 0; i < numThreads; ++i) {
-        t[i] = std::thread(callSimulation, parameterMap, std::ref(symbolTable),
-                           parmPrint, simulationsRun + i);
-      }
+    // Organise threads
+    unsigned numThreads = parameterMap.at("NUM_THREADS").dbl();
+    if (numThreads == 0) numThreads = numSimulations;
+    if (numSimulations < numThreads) numThreads = numSimulations;
+    unsigned simulationsPerThread = numSimulations / numThreads;
+    if (simulationsPerThread * numThreads < numSimulations) ++numThreads;
 
-      for (unsigned i = 0; i < numThreads; ++i)  t[i].join();
+    std::vector<std::thread> thread(numThreads);
 
-      simulationsRun += numThreads;
+    for (unsigned i = 0; i < numThreads; ++i) {
+      unsigned simulationFrom = i * simulationsPerThread;
+      unsigned simulationTo = std::min( (i + 1) * simulationsPerThread,
+                                        numSimulations);
+      thread[i] = std::thread(callSimulation, parameterMap,
+                              std::ref(symbolTable), parmPrint,
+                              simulationFrom, simulationTo);
     }
+
+    for (unsigned i = 0; i < numThreads; ++i)  thread[i].join();
   }
 }
 
@@ -374,8 +394,11 @@ void runTests(ParameterMap& parameterMap)
   Simulation simulation(parameterMap, 0);
   simulation.initializeAgents();
 
-  TESTEQ(simulation.agents.size(), parameterMap.at("NUM_AGENTS").dbl(),
-         successes, failures);
+  unsigned expectedAgents = (unsigned) parameterMap.at("NUM_AGENTS").dbl();
+  unsigned actualAgents = simulation.agents.size();
+  bool correctAgents = (actualAgents == expectedAgents ||
+                        actualAgents == expectedAgents - 1) ? true : false;
+  TESTEQ(correctAgents, true, successes, failures);
 
   simulation.agents[0]->age = 20;
   simulation.agents[0]->sex = MALE;
