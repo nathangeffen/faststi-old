@@ -1,0 +1,28 @@
+# ignore programme binary, object files and dSYM directory
+bin/faststi
+bin/blossom5
+bin/*.o
+bin/faststi.dSYM/
+faststi
+
+# ignore test results
+bin/output_*
+output/
+tmp*.csv
+
+# ignore R session files
+.RData
+.Rhistory
+
+# ignore files created by fitting
+inputToFaststi.csv
+outputFromFaststi.csv
+
+# ignore backup and swap files created by Emacs and VIM
+*~
+'#'*
+*.swp
+
+# ignore Blossom V source which is not redistributable
+blossom5-v1.0.src/
+

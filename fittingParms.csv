@@ -1,0 +1,21 @@
+* SD_RELATIONSHIP_PERIOD,Standard deviation of relationship period.,3,+
+* MEAN_RELATIONSHIP_PERIOD,Mean difference from expected relationship period.,0,+
+* SD_SINGLE_PERIOD,Standard deviation of single period,3,+
+* SCALE_SINGLE_PERIOD_DURING,Weibull scale of single period during simulation,100,+
+* SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING,Factor < 1.0 to multiple probability of being single for zero days during simulation,1,+
+* SHAPE_SINGLE_PERIOD_DURING,Weibull shape of single period during simulation,0.4,+
+* SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL,Factor < 1.0 to multiple probability of being single for zero days at initiatilization,0,+
+* SCALE_RELATIONSHIP_PERIOD_INITIAL,Multiple relationship scale parameters by this,0.333333,
+* MEAN_SINGLE_PERIOD,Mean difference from expected single period,0,+
+* SCALE_RELATIONSHIP_PERIOD_DURING,Multiple relationship scale parameters by this,1,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,364500,,
+,,,
+,139968,,
+,,,
+,104976,,
