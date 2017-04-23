@@ -129,8 +129,10 @@ CsvRow *_CsvParser_getRow(CsvParser *csvParser) {
                 int errorNum = errno;
                 const char *errStr = strerror(errorNum);
                 char *errMsg = (char*)malloc(1024 + strlen(errStr));
-                strcpy(errMsg, "");
-                sprintf(errMsg, "Error opening CSV file for reading: %s : %s", csvParser->filePath_, errStr);
+                /* strcpy(errMsg, "");*/
+                snprintf(errMsg, 1024 + strlen(errStr),
+                         "Error opening CSV file for reading: %s : %s",
+                         csvParser->filePath_, errStr);
                 _CsvParser_setErrorMessage(csvParser, errMsg);
                 free(errMsg);
                 return NULL;
@@ -207,7 +209,14 @@ CsvRow *_CsvParser_getRow(CsvParser *csvParser) {
             currFieldCharIter++;
             if (currFieldCharIter == acceptedCharsInField - 1) {
                 acceptedCharsInField *= 2;
-                currField = (char*)realloc(currField, acceptedCharsInField);
+                char *tmp = (char*) realloc(currField, acceptedCharsInField);
+                if (NULL == tmp) {
+                  fprintf(stderr, "Memory allocation error.\n");
+                  free(currField);
+                  exit(1);
+                } else {
+                  currField = tmp;
+                }
             }
         }
         lastCharIsQuote = (currChar == '\"') ? 1 : 0;

@@ -9,7 +9,7 @@ endif
 #  -g    adds debugging information to the executable file
 #  -Wall turns on most, but not all, compiler warnings
 DEBUGFLAGS = -DDEBUG -g
-CXXFLAGS  = -Wall -std=c++11 -pthread
+CXXFLAGS  = -Wall -Wextra -pedantic -std=c++11 -pthread
 RELFLAGS = -O3
 EXTRAFLAGS =
 
@@ -37,10 +37,12 @@ $(OBJDIR)main.o: $(SRCDIR)main.cc $(SRCDIR)simulate.hh
 $(OBJDIR)simulate.o: $(SRCDIR)simulate.cc $(INCLUDES)
 	$(CXX) $(DEBUGFLAGS) $(CXXFLAGS) -c $(SRCDIR)simulate.cc -o $@
 
-$(OBJDIR)agent.o: $(SRCDIR)agent.cc $(SRCDIR)common.hh
+$(OBJDIR)agent.o: $(SRCDIR)agent.cc $(SRCDIR)agent.hh $(SRCDIR)linear.hh \
+$(SRCDIR)common.hh
 	$(CXX) $(DEBUGFLAGS) $(CXXFLAGS) -c $(SRCDIR)agent.cc -o $@
 
-$(OBJDIR)parameters.o: $(SRCDIR)parameters.cc $(SRCDIR)parameters.hh $(SRCDIR)common.hh
+$(OBJDIR)parameters.o: $(SRCDIR)parameters.cc $(SRCDIR)parameters.hh \
+$(SRCDIR)common.hh
 	$(CXX) $(DEBUGFLAGS) $(CXXFLAGS) -c $(SRCDIR)parameters.cc -o $@
 
 $(OBJDIR)linear.o: $(SRCDIR)linear.cc $(SRCDIR)linear.hh

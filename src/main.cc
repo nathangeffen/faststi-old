@@ -10,11 +10,11 @@
    Simple command line processing functions taken from:
    http://stackoverflow.com/questions/865668/parse-command-line-arguments
 
-   @param begin start of character stream to read from
-   @param end of character stream to read from
-   @param option to search for
+   @param begin[in] Start of character stream being read from
+   @param end[in] End of character stream being read from
+   @param option[in] Command line option to search for
 
-   @return pointer to argument of command line option, or null if not found
+   @return Pointer to argument of command line option, or null if not found
 */
 
 char* getCmdOption(char ** begin, char ** end, const std::string& option)
@@ -29,11 +29,11 @@ char* getCmdOption(char ** begin, char ** end, const std::string& option)
    Simple command line processing functions taken from:
    http://stackoverflow.com/questions/865668/parse-command-line-arguments
 
-   @param begin start of character stream to read from
-   @param end of character stream to read from
-   @param option to search for
+   @param begin[in] Start of character stream being read from
+   @param end[in] End of character stream being read from
+   @param option[in] Command line option to search for
 
-   @return true if found else false
+   @return True if found else false
 */
 
 
@@ -45,16 +45,20 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option)
 int main(int argc, char *argv[])
 {
   if (cmdOptionExists(argv, argv + argc, "-h")) {
-    printf("%s options, where options are:\n"
-           "-h: help - Print this message.\n"
-           "-f filename: Use filename as input.\n"
-           "-s integer: Random seed (0 - use time).\n"
-           "-t: run tests.\n",
-           argv[0]);
+    std::cout << argv[0]
+              << " options, where options are:\n"
+      "-h: help - Print this message.\n"
+      "-f filename: Use filename as input.\n"
+      "-s integer: Random seed (0 - use time).\n"
+      "-t: run tests.\n";
     ParameterMap parameterMap;
     parameterMap.print(0, std::string(""));
     exit(1);
   }
+
+  // In some implementations executing this may dramatically speed up
+  // writing to standard output.
+  // std::ios::sync_with_stdio(false);
 
   const char *seed_str = getCmdOption(argv, argv + argc, "-s");
   std::vector<ParameterMap> parameterMaps;
@@ -63,7 +67,8 @@ int main(int argc, char *argv[])
     std::ifstream infile;
     infile.open (input_file_str, std::ifstream::in);
     if (infile.fail()) {
-      fprintf(stderr, "Error opening %s\n", input_file_str);
+      infile.close();
+      std::cerr << "Error opening " << input_file_str << std::endl;
       exit(1);
     }
     readParameters(infile, parameterMaps);

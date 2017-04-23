@@ -12,7 +12,6 @@ void readParameters(std::istream& input,
 {
   std::string lineString;
   unsigned lineNumber = 0;
-  std::string errorMessage;
 
   parameterMaps.push_back(ParameterMap());
   while (std::getline(input, lineString)) {
@@ -27,7 +26,7 @@ void readParameters(std::istream& input,
       continue;
     }
     if (lineString.back() == '@') rangeType = THREE_PARM;
-    if (lineString.back() == '!') rangeType = COMMA_SEPARATED;
+    if (lineString.back() == '!') rangeType = LIST;
     if (rangeType > NONE) {
       lineString.pop_back(); // Remove Range indicator
       boost::trim(lineString);

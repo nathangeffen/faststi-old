@@ -12,13 +12,40 @@
 thread_local std::mt19937 rng;
 
 /**
+   Writes analytical information in comma separated format to stdout. This is
+   the final function called by other csvout functions.
+
+   @param desc1[in] Description 1
+   @param desc2[in] Description 2
+   @param value[in] Parameter to print
+*/
+
+inline void writeCsvLine(const std::string& simulationName,
+                         const unsigned simulationNum,
+                         const double date,
+                         const std::string& desc1,
+                         const std::string& desc2,
+                         const std::ostringstream& extra)
+{
+  // Must do it this way to ensure multithreading doesn't
+  // result in one line's output spread over multiple lines
+  std::ostringstream stream;
+  stream << simulationName << "," << simulationNum << ","
+         << std::fixed << std::setprecision(3) << date << ","
+         << desc1 << "," << desc2 << ","
+         << extra.str() << std::endl;
+  std::cout << stream.str();
+}
+
+
+/**
    Calculates the number of people who are single in the initial population.
 
-   @param data matrix of probabilities
+   @param data[in] matrix of probabilities
    @return number of people who are single
 */
 
-double calcNumberSingles(DblMatrix data, unsigned X)
+double calcNumberSingles(const DblMatrix& data, const unsigned X)
 {
   auto ageshare = getCol(data, 1);
   auto femratio = getCol(data, 2);
@@ -86,15 +113,15 @@ void infectEvent(Simulation* simulation)
 
       if (agent->partner->sex == agent->sex) {
         if (agent->sex == MALE) {
-          risk_infection = simulation->hom_male_infectiousness;
+          risk_infection = simulation->homMaleInfectiousness;
         } else {
-          risk_infection = simulation->hom_female_infectiousness;
+          risk_infection = simulation->homFemaleInfectiousness;
         }
       } else {
         if (agent->sex == MALE) {
-          risk_infection = simulation->het_female_infectiousness;
+          risk_infection = simulation->hetFemaleInfectiousness;
         } else {
-          risk_infection = simulation->het_male_infectiousness;
+          risk_infection = simulation->hetMaleInfectiousness;
         }
       }
 
@@ -119,23 +146,19 @@ void breakupEvent(Simulation* simulation)
       agent->partner = NULL;
       partner->partner = NULL;
       agent->setSinglePeriod(simulation->currentDate,
-                             simulation->shapeSinglePeriodDuring,
+                             simulation->weibullSinglePeriodDuring,
                              simulation->scaleSinglePeriodDuring,
                              simulation->probZeroSinglePeriod,
                              simulation->scaleSinglePeriodZeroDaysDuring);
       partner->setSinglePeriod(simulation->currentDate,
-                               simulation->shapeSinglePeriodDuring,
+                               simulation->weibullSinglePeriodDuring,
                                simulation->scaleSinglePeriodDuring,
                                simulation->probZeroSinglePeriod,
                                simulation->scaleSinglePeriodZeroDaysDuring);
       ++breakups;
     }
   }
-  if (simulation->printNumBreakups) {
-    printf("%s,BREAKUPS,,%u,%.3f,%u\n", simulation->simulationName.c_str(),
-           simulation->simulationNum, simulation->currentDate,
-           breakups);
-  }
+  if (simulation->printNumBreakups) simulation->csvout("BREAKUPS", "", breakups);
   simulation->totalBreakups += breakups;
 }
 
@@ -156,7 +179,6 @@ void randomMatchEvent(Simulation* simulation)
 
 void randomKMatchEvent(Simulation *simulation)
 {
-  std::uniform_real_distribution<double> uni;
   AgentVector unmatchedAgents = simulation->getShuffledUnmatchedAgents();
 
   if(unmatchedAgents.size()) {
@@ -248,6 +270,7 @@ void blossomVMatchEvent(Simulation* simulation)
   FILE *f = fopen(blossom_out_file.c_str(), "r");
   uint64_t from, to;
   if (fscanf(f, "%lu %lu\n", &from, &to) != 2) {
+    fclose(f);
     throw std::runtime_error("Unexpected format in Blossom V graph file");
   }
   for (size_t i = 0; i < agents.size() / 2; ++i) {
@@ -283,6 +306,23 @@ void Simulation::setEvents()
 }
 
 
+/**
+   Writes analytical information in comma separated format to stdout.
+
+   @param desc1[in] Description 1
+   @param desc2[in] Description 2
+   @param value[in] Parameter to print
+*/
+// inline void csvout(const unsigned simulationNum,
+//                    const double date,
+//                    const std::string& key,
+//                    const ParameterValue& value)
+// {
+//   std::ostringstream stream;
+//   stream << (value.isString ? value.strValue : value.value[0]);
+//   csvout("PARAMETER", key, stream);
+// }
+
 
 void callSimulation(ParameterMap parameterMap,
                     const SymbolTable& symbolTable,
@@ -301,12 +341,25 @@ void callSimulation(ParameterMap parameterMap,
     prefix.append(parameterMap.at("SIMULATION_NAME").str());
     prefix.append(",");
     // Parameter printing
-    if (parmPrint == ALL_PARMS) {
-      parameterMap.print(i, prefix, suffix);
-    } else if (parmPrint == VARYING_PARMS) {
-      parameterMap.print(i, prefix, suffix, false, true);
+    if (parmPrint > NO_PARMS) {
+      double date = parameterMap.at("START_DATE").dbl();
+      std::string name(parameterMap.at("SIMULATION_NAME").str());
+      for (auto& p: parameterMap) {
+        if (parmPrint == ALL_PARMS || p.second.isVaryingRange == true) {
+          std::ostringstream stream;
+          if (p.second.isString) {
+            stream << p.second.str();
+          } else {
+            for (size_t i = 0; i < p.second.values.size(); ++i) {
+              stream << p.second.values[i];
+              if (i + 1 < p.second.values.size()) stream << ",";
+            }
+          }
+          writeCsvLine(name, i, date, "PARAMETER", p.first, stream);
+        }
+      }
     }
-
+    // Run the simulation
     Simulation(parameterMap, i).simulate();
   }
 }
@@ -315,6 +368,8 @@ void callSimulation(ParameterMap parameterMap,
 void execSimulationSet(std::vector<ParameterMap> parameterMaps,
                        unsigned seed)
 {
+  bool csvHeaderWritten = false;
+
   for (auto& parameterMap: parameterMaps) {
     if (seed == 0) { // Use time
       parameterMap["RANDOM_SEED"].values = { (double) clock() };
@@ -336,10 +391,16 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
       for (auto& e: symbolTable.initialValues) {
           if (e.second > cycleLength) cycleLength = e.second;
       }
-      fprintf(stderr, "Symbol table cycle length: %lu\n", cycleLength);
+      std::cerr << "Symbol table cycle length: " << cycleLength << std::endl;
       exit(1);
     }
 #endif
+
+    // Write the CSV header
+    if (parameterMap.at("CSV_HEADER").isSet() && csvHeaderWritten == false) {
+      std::cout << "Name,Num,Date,Desc1,Desc2,Value" << std::endl;
+      csvHeaderWritten = true;
+    }
 
     // Needed for parameter printing
     unsigned parmPrint = (unsigned) parameterMap.at("PRINT_PARAMETERS").dbl();
@@ -547,5 +608,6 @@ void runTests(ParameterMap& parameterMap)
   TESTEQ(infected < parameterMap.at("NUM_AGENTS").dbl(), true,
          successes, failures);
 
-  printf("Successes: %u. Failures: %u.\n", successes, failures);
+  std::cout << "Successes: " << successes
+            << " Failures: " << failures << std::endl;
 }

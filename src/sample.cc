@@ -7,7 +7,6 @@ int main()
   Sample sample(p, &rng);
 
   vector<unsigned> cumul(p.size(), 0);
-  std::uniform_real_distribution<double> uni;
   for (int j = 0; j < 10000; ++j) {
     unsigned i = sample();
     cumul[i] += 1;

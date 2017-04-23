@@ -58,7 +58,7 @@ public:
     scale = scaleRelationshipPeriod[ index1 ] [ index2 ];
     scale += relationshipPeriodDeviation + partner->relationshipPeriodDeviation;
     scale *= scaleModifierRelationshipPeriod;
-    std::weibull_distribution<double> dist(shape, std::max(0.0001, scale) );
+    std::weibull_distribution<double> dist(shape, std::max(scale, EPSILON) );
     double relationshipLength = dist(rng);
     relationshipChangeDate = std::max(currentDate,
                                       currentDate + relationshipLength);
@@ -66,8 +66,8 @@ public:
   }
 
   void setSinglePeriod(const double currentDate,
-                       const double shape,
-                       const double scale,
+                       const DblMatrix& weibullSinglePeriod,
+                       const double scaleModifierSinglePeriod,
                        const DblMatrix& probZeroSinglePeriod,
                        const double probZeroSinglePeriodScale)
   {
@@ -79,10 +79,13 @@ public:
     if (uni(rng) < prob) {
       relationshipChangeDate = currentDate;
     } else {
+      double shape = weibullSinglePeriod[index][sex * 2];
+      double scale = weibullSinglePeriod[index][sex * 2 + 1]
+        + singlePeriodDeviation;
+      scale *= scaleModifierSinglePeriod;
       std::weibull_distribution<double> dist(shape,
-                                             std::max(scale +
-                                                      singlePeriodDeviation,
-                                                      0.0001));
+                                             std::max(scale,
+                                                      EPSILON));
       relationshipChangeDate = std::max(currentDate,
                                         currentDate + (double) dist(rng) * DAY);
     }
@@ -101,8 +104,6 @@ public:
     fprintf(f, "ID,%7u,Age,%3.2f,Sex,%c,Orientation,%c,Desired,%.0f",
             id, age, (sex == MALE ? 'M' : 'F'),
             (sexual_orientation == HETEROSEXUAL ? 'S' : 'G'), desired_age);
-    //fprintf(f, ",Risk,%.3f,%.3f,Partner",
-    //        relationship_length_factor, binomial_p_relationship_wait);
     if (partner)
       fprintf(f,",%7u", partner->id);
     else

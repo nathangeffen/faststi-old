@@ -30,7 +30,7 @@
 enum RangeType {
   NONE = 0,
   THREE_PARM,
-  COMMA_SEPARATED
+  LIST
 };
 
 /**
@@ -58,11 +58,9 @@ protected:
 class UnknownParameter: public BadParameter
 {
 public:
-  explicit UnknownParameter(const char* parameter, const char* additionalMsg = "")
-    : BadParameter(parameter, additionalMsg)
+  explicit UnknownParameter(const char* parameter)
+    : BadParameter(parameter, "Unknown parameter")
   {}
-protected:
-  std::string msg = "Unknown parameter ";
 };
 
 
@@ -106,11 +104,7 @@ struct ParameterValue {
   {
     return strValue;
   };
-  inline const char* c_str() const
-  {
-    return str().c_str();
-  }
-  inline const bool isSet() const
+  inline bool isSet() const
   {
     return (values[0] != 0.0) ? true : false;
   }
@@ -135,7 +129,7 @@ public:
       @param setDefaults if true then default parameters are inserted into the
       parameter map.
   */
-  ParameterMap(bool setDefaults = true) :
+  explicit ParameterMap(bool setDefaults = true) :
     std::unordered_map<std::string,  ParameterValue>()
   {
     if (setDefaults) setDefaultParameters();
@@ -155,7 +149,7 @@ public:
     addParameter("NUM_THREADS",
                  "Number of threads (default is one per simulation - 0)", {0});
     addParameter("NUM_AGENTS", "Number of agents", {1000.0});
-
+    addParameter("CSV_HEADER", "Write CSV column names", {1});
     addParameter("START_DATE",
                  "Start date of simulation", {2017.0});
     addParameter("STABILIZATION_STEPS",
@@ -279,30 +273,32 @@ public:
     addParameter("RANDOM_SEED", "Value to set random seed to",
                  {1});
 
+    addParameter("WEIBULL_SINGLE_INITIAL_CSV",
+                 "File of scales and shapes for single period during simulation",
+                 "data/SingleInitial.csv");
+
+    addParameter("WEIBULL_SINGLE_DURING_CSV",
+                 "File of scales and shapes for single period during simulation",
+                 "data/SingleDuring.csv");
+
     // Parameters that may need to be fitted
-    addParameter("SHAPE_SINGLE_PERIOD_INITIAL_MALE",
-                 "Weibull shape of male single period at begin of simulation",
-                 {4.6343145987});
-    addParameter("SCALE_SINGLE_PERIOD_INITIAL_MALE",
-                 "Weibull scale of male single period at begin of simulation",
-                 {31.7380239576});
-    addParameter("SHAPE_SINGLE_PERIOD_INITIAL_FEMALE",
-                 "Weibull shape of female single period at begin of simulation",
-                 {4.9773707649});
-    addParameter("SCALE_SINGLE_PERIOD_INITIAL_FEMALE",
-                 "Weibull scale of female single period at begin of simulation",
-                 {30.953960875});
+
     addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL",
                  "Factor < 1.0 to multiple probability of being single "
                  "for zero days at initiatilization", {0.0});
+
     addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING",
                  "Factor < 1.0 to multiple probability of being single "
                  "for zero days during simulation", {1.0});
 
-    addParameter("SHAPE_SINGLE_PERIOD_DURING",
-                 "Weibull shape of single period during simulation", {0.4});
+    addParameter("SCALE_SINGLE_PERIOD_INITIAL",
+                 "Multiply Weibull initial single period scale parameters "
+                 "by this", {1.0});
     addParameter("SCALE_SINGLE_PERIOD_DURING",
-                 "Weibull scale of single period during simulation", {100.0});
+                 "Multiply Weibull during simulation single period  scale "
+                 "parameters by this", {1.0});
+
+
     addParameter("MEAN_SINGLE_PERIOD",
                  "Mean difference from expected single period", {0});
     addParameter("SD_SINGLE_PERIOD",
@@ -320,6 +316,7 @@ public:
                  "Mean difference from expected relationship period.", {0});
     addParameter("SD_RELATIONSHIP_PERIOD",
                  "Standard deviation of relationship period.", {3.0});
+
 
     addParameter("SHAPE_REL_CSV",
                  "File of shapes for partnership", "data/Rel_shape.csv");
@@ -348,7 +345,7 @@ public:
   */
   void addParameter(const char* name,
                     const char* description,
-                    const std::initializer_list<double> values)
+                    const std::initializer_list<double>& values)
   {
     ParameterValue parameterValue;
 
@@ -413,8 +410,8 @@ public:
       } else {
         for (auto& v: p.second.values) oss << "," << v;
       }
-      oss << suffix;
-      printf("%s\n", oss.str().c_str());
+      oss << suffix << std::endl;
+      std::cout << oss.str();
     }
   }
 
@@ -455,7 +452,7 @@ public:
         if (rangeType == THREE_PARM) {
           assert(values.size() == 3);
           (*this)[name].values = setRange(values[0], values[1], values[2]);
-        } else if (rangeType == COMMA_SEPARATED) {
+        } else if (rangeType == LIST) {
           (*this)[name].values = values;
         } else {
           throw std::runtime_error("Unknown range type");
