@@ -1,3 +1,5 @@
+# Finds sets of parameters that produce stable matings and breakups.
+
 getmatings <- function(index)
 {
     matingpool[matingpool$Num==index,]

@@ -1,14 +1,18 @@
-inp = read.csv("output_20k_3yr_fewsims.csv", TRUE)
 library(xtable)
+args = commandArgs(trailingOnly=TRUE)
+
+if (length(args)==0) {
+  filename = "tmp.csv"
+} else {
+  filename = args[1]
+}
 
 # Timings
-
-timings = inp[grepl("TIMING",inp$V2),]
-timings = timings[grepl("AFTER",timings$V3),]
-mean_timings = aggregate(timings$V5, by=list(timings$V1),FUN=mean)
+inp = read.csv(filename, TRUE)
+timings = inp[inp$Desc1=="TIMING" & inp$Desc2=="AFTER",]
+mean_timings = aggregate(timings$Value, by=list(timings$Name),FUN=mean)
 colnames(mean_timings) <- c("Simulation","Avg. Time")
 xtable(mean_timings)
-
 
 # Prevalences
 
@@ -48,22 +52,28 @@ confinterval_97_5 <- function(vals) {
   )
 }
 
-
-
 calcPrevalenceForDate <- function(date_of_analysis) {
-  prevalences = inp[inp$V2 == "ANALYSIS",]
-  prevalences = prevalences[grep("PREVALENCE|MALE",prevalences$V3),]
-  prevalences = prevalences[prevalences$V5==date_of_analysis,]
-  mean_prevalences =  aggregate(prevalences$V6, by=list(prevalences$V1,prevalences$V3),
-                              FUN=mean)
-  sd_prevalences = aggregate(prevalences$V6, by=list(prevalences$V1,prevalences$V3),
-                           FUN=sd)
-  ci_prevalences_02_5 = aggregate(prevalences$V6, by=list(prevalences$V1,prevalences$V3),
+  prevalences = inp[inp$Desc1 == "ANALYSIS",]
+  prevalences = prevalences[grep("PREVALENCE|MALE",prevalences$Desc2),]
+  prevalences = prevalences[prevalences$Date==date_of_analysis,]
+  mean_prevalences =  aggregate(prevalences$Value, 
+                                by=list(prevalences$Name, 
+                                        prevalences$Desc2),
+                                FUN=mean)
+  sd_prevalences = aggregate(prevalences$Value, 
+                             by=list(prevalences$Name, 
+                                     prevalences$Desc2),
+                              FUN=sd)
+  ci_prevalences_02_5 = aggregate(prevalences$Value, 
+                                  by=list(prevalences$Name, 
+                                          prevalences$Desc2),
                            FUN=confinterval_02_5)
-  ci_prevalences_97_5 = aggregate(prevalences$V6, by=list(prevalences$V1,prevalences$V3),
+  ci_prevalences_97_5 = aggregate(prevalences$Value, 
+                                  by=list(prevalences$Name, 
+                                          prevalences$Desc2),
                                FUN=confinterval_97_5)
   output = data.frame(simulation=mean_prevalences$Group.1,
-                    measure=mean_prevalences$Group.2,
+                    measure=mean_prevalences$Group.2, 
                     mean=mean_prevalences$x,
                     sd=sd_prevalences$x,
                     ci_02_5=ci_prevalences_02_5$x,
@@ -74,12 +84,12 @@ calcPrevalenceForDate <- function(date_of_analysis) {
 }
 
 initialprevs = calcPrevalenceForDate(2017)
-finalprevs = calcPrevalenceForDate(2020)
+finalprevs = calcPrevalenceForDate(2019)
 
 format_prevs <- function(prevs) {
   categories = c("ALL", "Males", "Females", "MSM", "WSW",
-                 "Male 15-19", "Female 15-19", "Male 20-24", "Female 20-24",
-                 "Male 25-29", "Female 25-29", "Male 30-34", "Female 30-34",
+                 "Male 15-19", "Female 15-19", "Male 20-24", "Female 20-24", 
+                 "Male 25-29", "Female 25-29", "Male 30-34", "Female 30-34", 
                  "Male 35-39", "Female 35-39", "Male 40-44", "Female 40-44",
                  "Male 45-49", "Female 45-49")
   vals = rep(-1, length(categories))
@@ -101,17 +111,17 @@ format_prevs <- function(prevs) {
   r_row_names = gsub("MALE_AGES", "MALEPREVALENCE", s)
   for (i in c(0:length(r_row_names))) {
     for (j in c(0:length(r_col_names))) {
-      expected = format(round(subset(prevs,measure==r_row_names[i] &
+      expected = format(round(subset(prevs,measure==r_row_names[i] & 
                             simulation==r_col_names[j])$mean[1], 3))
-      stddev = format(round(subset(prevs,measure==r_row_names[i] &
+      stddev = format(round(subset(prevs,measure==r_row_names[i] & 
                               simulation==r_col_names[j])$sd[1], 3))
-      c_025 = format(round(subset(prevs,measure==r_row_names[i] &
-                                   simulation==r_col_names[j])$ci_02_5[1], 3))
-      c_975 = format(round(subset(prevs,measure==r_row_names[i] &
-                                  simulation==r_col_names[j])$ci_97_5[1], 3))
-      output_table[tex_row_names[i],  tex_col_names[j] ] = paste(expected, " ",
+      c_025 = format(round(subset(prevs,measure==r_row_names[i] & 
+                                   simulation==r_col_names[j])$ci_02_5[1], 3)) 
+      c_975 = format(round(subset(prevs,measure==r_row_names[i] & 
+                                  simulation==r_col_names[j])$ci_97_5[1], 3))      
+      output_table[tex_row_names[i],  tex_col_names[j] ] = paste(expected, " ", 
                                                                "[", c_025, ";", c_975,"]",
-                                                               sep="")
+                                                               sep="") 
     }
   }
   output_table
@@ -125,40 +135,43 @@ xtable(output_table_final)
 
 # Scores
 
-scores = inp[inp$V3 == "SCORE",]
-scores = scores[scores$V5==2020,]
-mean_scores =  aggregate(scores$V6, by=list(scores$V1,scores$V3),
+scores = inp[inp$Desc2 == "SCORE",]
+scores = scores[scores$Date==2019,]
+mean_scores =  aggregate(scores$Value, by=list(scores$Name),
                               FUN=mean)
-sd_scores = aggregate(scores$V6, by=list(scores$V1,scores$V3),
+sd_scores = aggregate(scores$Value, by=list(scores$Name),
                            FUN=sd)
-ci_scores_02_5 = aggregate(scores$V6, by=list(scores$V1,scores$V3),
+
+ci_scores_02_5 = aggregate(scores$Value, by=list(scores$Name,
+                                                 scores$Desc2),
                                 FUN=confinterval_02_5)
-ci_scores_97_5 = aggregate(scores$V6, by=list(scores$V1,scores$V3),
+ci_scores_97_5 = aggregate(scores$Value, by=list(scores$Name,
+                                              scores$Desc2),
                                 FUN=confinterval_97_5)
 
 # Poor
 
-poor = inp[inp$V3 == "POOR",]
-poor = poor[poor$V5==2020,]
-mean_poor =  aggregate(poor$V6, by=list(poor$V1,poor$V3),
+poor = inp[inp$Desc2 == "POOR",]
+poor = poor[poor$Date==2019,]
+mean_poor =  aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
                          FUN=mean)
-sd_poor = aggregate(poor$V6, by=list(poor$V1,poor$V3),
+sd_poor = aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
                       FUN=sd)
-ci_poor_02_5 = aggregate(poor$V6, by=list(poor$V1,poor$V3),
+ci_poor_02_5 = aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
                            FUN=confinterval_02_5)
-ci_poor_97_5 = aggregate(poor$V6, by=list(poor$V1,poor$V3),
+ci_poor_97_5 = aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
                            FUN=confinterval_97_5)
 
-# Histograms just to view normality
+# Histograms to view normality
 
 # cspm_0_01 = prevalences[prevalences$V1=="CSPM_0_01",]
 # cspm_0_01 = cspm_0_01[cspm_0_01$V3=="PREVALENCE",]
 # hist(cspm_0_01$V6)
-#
+# 
 # rpm_0_01 = prevalences[prevalences$V1=="RPM_0_01",]
 # rpm_0_01 = rpm_0_01[rpm_0_01$V3=="PREVALENCE",]
 # hist(rpm_0_01$V6)
-#
+# 
 # rpm_0_1 = prevalences[prevalences$V1=="RPM_0_1",]
 # rpm_0_1 = rpm_0_1[rpm_0_1$V3=="PREVALENCE",]
 # hist(rpm_0_1$V6)
