@@ -90,25 +90,25 @@ while(prevalence < 0.3) {
   
   # Read the output of Faststi. This step can be slow because 100 executions of 
   # the simulation produces a lot of output.
-  inp = read.csv(filenameFromFaststi, FALSE)
+  inp = read.csv(filenameFromFaststi, TRUE)
   
   # Filter out everything we don't need
-  outputPrevalences = inp[inp$V3 == "PREVALENCE" & inp$V5 == 2020,]
+  outputPrevalences = inp[inp$Desc2 == "PREVALENCE" & inp$Date == 2020,]
   
   # Find the maximum prevalence
-  prevalence = max(outputPrevalences$V6)
+  prevalence = max(outputPrevalences$Value)
   # Find the row in the data frame with the highest prevalence
-  row_num = which(outputPrevalences$V6==prevalence)
+  row_num = which(outputPrevalences$Value==prevalence)
   
   # (This awful next line of code is the only way I could find to get a scalar
   # from a data frame. Feel free to suggest a more stylish way.)
   # Each row has the simulation number. We need the simulation number to find out
   # what the parameter was that it was executed with. bestSimulation gets that simulation
   # number.
-  bestSimulation = as.integer(toString(outputPrevalences[row_num,4])) 
+  bestSimulation = as.integer(toString(outputPrevalences[row_num,]$Num)) 
   
   # Now we find the value of the parameter we passed.
-  bestParameter =  inp[inp$V4 == "HET_MALE_INFECTIOUSNESS" & inp$V2 == bestSimulation,]$V5
+  bestParameter =  inp[inp$Desc2 == "HET_MALE_INFECTIOUSNESS" & inp$Num == bestSimulation,]$Value
   # Print our info
   print(sprintf("Prevalence: %.4f Infectiousness: %.4f", prevalence, bestParameter))
   
