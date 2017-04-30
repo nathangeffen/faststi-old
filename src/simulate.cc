@@ -584,30 +584,42 @@ void runTests(ParameterMap& parameterMap)
   TESTEQ(symbolTable[99]["var1"], 8.0, successes, failures);
   TESTEQ(symbolTable[99]["var2"], 500.0, successes, failures);
 
-  parameterMap["END_DATE"].values = {2018};
-  parameterMap["TIME_STEP"].values = {0.5};
-  parameterMap["PRINT_PARAMETERS"].values = {0};
-  parameterMap["ANALYZE_AFTER_INIT"].values = {0};
-  parameterMap["ANALYZE_AT_END"].values = {0};
-  parameterMap["OUTPUT_NUM_BREAKUPS"].values = {0};
-  parameterMap["OUTPUT_NUM_MATINGPOOL"].values = {0};
-  parameterMap["OUTPUT_TIMING_AFTER"].values = {0};
-  Simulation s(parameterMap, 1);
-  s.initializeAgents();
-  s.calculateDemographics();
-  TESTEQ(s.numInfectedMales > 0, true, successes, failures);
-  TESTEQ(s.numInfectedFemales > 0, true, successes, failures);
-  unsigned infected = s.numInfectedMales + s.numInfectedFemales;
-  TESTEQ(infected < parameterMap.at("NUM_AGENTS").dbl(), true,
-         successes, failures);
-  s.simulate(false);
-  s.calculateDemographics();
-  TESTEQ(s.numInfectedMales + s.numInfectedFemales > infected, true,
-         successes, failures);
-  infected = s.numInfectedMales + s.numInfectedFemales;
-  TESTEQ(infected < parameterMap.at("NUM_AGENTS").dbl(), true,
-         successes, failures);
+  {
+    ParameterMap p;
+    Simulation s(p, 1);
+    TESTEQ(s.mswAgeDist.size(), ( (size_t) 89), successes, failures);
+    TESTEQ( fabs(s.mswAgeDist[78][88] - 0.0039946161 < EPSILON), true, successes, failures);
+    truncateMatrix(s.mswAgeDist, 38, 38);
+    TESTEQ(s.mswAgeDist.size(), ( (size_t) 38), successes, failures);
+    TESTEQ(s.mswAgeDist[0].size(), ( (size_t) 38), successes, failures);
+    TESTEQ( fabs(s.mswAgeDist[37][37] - 0.133143 < EPSILON), true, successes, failures);
+  }
 
+  {
+    parameterMap["END_DATE"].values = {2018};
+    parameterMap["TIME_STEP"].values = {0.5};
+    parameterMap["PRINT_PARAMETERS"].values = {0};
+    parameterMap["ANALYZE_AFTER_INIT"].values = {0};
+    parameterMap["ANALYZE_AT_END"].values = {0};
+    parameterMap["OUTPUT_NUM_BREAKUPS"].values = {0};
+    parameterMap["OUTPUT_NUM_MATINGPOOL"].values = {0};
+    parameterMap["OUTPUT_TIMING_AFTER"].values = {0};
+    Simulation s(parameterMap, 1);
+    s.initializeAgents();
+    s.calculateDemographics();
+    TESTEQ(s.numInfectedMales > 0, true, successes, failures);
+    TESTEQ(s.numInfectedFemales > 0, true, successes, failures);
+    unsigned infected = s.numInfectedMales + s.numInfectedFemales;
+    TESTEQ(infected < parameterMap.at("NUM_AGENTS").dbl(), true,
+           successes, failures);
+    s.simulate(false);
+    s.calculateDemographics();
+    TESTEQ(s.numInfectedMales + s.numInfectedFemales > infected, true,
+           successes, failures);
+    infected = s.numInfectedMales + s.numInfectedFemales;
+    TESTEQ(infected < parameterMap.at("NUM_AGENTS").dbl(), true,
+           successes, failures);
+  }
   std::cout << "Successes: " << successes
             << " Failures: " << failures << std::endl;
 }

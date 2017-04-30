@@ -1,5 +1,11 @@
 #include "CSV_Parser.hh"
 
+/**
+   Prints the values of a matrix.
+
+   @param dblMatrix[in] Matrix of doubles to print
+ */
+
 void printDblMatrix(const DblMatrix& dblMatrix)
 {
   for (auto& r: dblMatrix) {

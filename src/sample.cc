@@ -4,7 +4,7 @@ int main()
 {
   mt19937 rng(5);
   std::vector<double> p = {0.1, 0.1, 0.2, 0.4, 0.1, 0.05, 0.05};
-  Sample sample(p, &rng);
+  Sample<> sample(p, &rng);
 
   vector<unsigned> cumul(p.size(), 0);
   for (int j = 0; j < 10000; ++j) {

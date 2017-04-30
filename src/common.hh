@@ -6,9 +6,9 @@
 #define YEAR 1.0
 #define DAY (YEAR / 365)
 #define MIN_AGE 12
-#define MAX_AGE 100
+#define MAX_AGE 101
 #define AGE_INTERVAL 5
-#define NUM_INTERVALS ( (MAX_AGE + 1) / AGE_INTERVAL + 1 )
+#define NUM_INTERVALS ( MAX_AGE / AGE_INTERVAL + 1 )
 
 
 #define FEMALE 0

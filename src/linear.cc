@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstdlib>
 
 #include "linear.hh"
@@ -99,4 +100,23 @@ double sumVector(const std::vector<double>& v)
   for (auto d: v)
     total += d;
   return total;
+}
+
+/**
+   Truncates a matrix to the specified number of rows and columns.
+
+   @param matrix[in] Matrix to truncate
+   @param rows[in] Number of rows to keep
+   @param cols[in] Number of columns to keep
+*/
+
+
+void truncateMatrix(DblMatrix& matrix, const size_t rows, const size_t cols)
+{
+  assert(rows <= matrix.size());
+  assert(cols <= matrix[0].size());
+  if (rows < matrix.size()) matrix.erase(matrix.begin() + rows, matrix.end());
+  if (cols < matrix[0].size()) {
+    for (auto& row: matrix)  row.erase(row.begin() + cols, row.end());
+  }
 }

@@ -103,6 +103,9 @@ public:
 
   bool printNumMatings;
   bool printNumBreakups;
+  bool analyzeTruncatedAgeInit = false;
+  bool analyzeTruncatedAgeDuring = false;
+  bool analyzeTruncatedAgeAfter = false;
 
   double currentDate;
   double failureThresholdScore;
@@ -139,6 +142,8 @@ public:
   unsigned numInfectedLongBreakLongPartnership = 0;
   unsigned poorMatches = 0;
   unsigned failedMatches = 0;
+  unsigned minAge;
+  unsigned maxAge;
 
   DblMatrix weibullSinglePeriodInitial;
   DblMatrix weibullSinglePeriodDuring;
@@ -175,6 +180,10 @@ public:
       ? true : false;
     printNumMatings = (parameterMap.at("OUTPUT_NUM_MATINGPOOL").dbl() > 0.0)
       ? true : false;
+    analyzeTruncatedAgeInit = parameterMap.at("ANALYZE_TRUNCATED_AGE_INIT").isSet();
+    analyzeTruncatedAgeDuring = parameterMap.at("ANALYZE_TRUNCATED_AGE_DURING").isSet();
+    analyzeTruncatedAgeAfter = parameterMap.at("ANALYZE_TRUNCATED_AGE_AFTER").isSet();
+
 
     // Initialize thread local random number generator
     unsigned seed = parameterMap.at("RANDOM_SEED").dbl() * (simulationNum + 1);
@@ -254,12 +263,22 @@ public:
     auto lf = parameterMap.at("PARTNERS_LOAD_FACTOR").dbl();
     if (lf > 0) partnerships.partnerships.max_load_factor(lf);
 
+    // Minimum and maximum ages
+    minAge = parameterMap.at("MIN_AGE_TRUNCATE").dbl();
+    if (minAge == 0) minAge = MIN_AGE;
+    maxAge = parameterMap.at("MAX_AGE_TRUNCATE").dbl();
+    if (maxAge == 0) maxAge = MAX_AGE;
+
     // Age distribution matrices
     msmAgeDist = matrixFromCSV("MSM_AGE_DIST_CSV", ",", true);
     wswAgeDist = matrixFromCSV("WSW_AGE_DIST_CSV", ",", true);
     mswAgeDist = matrixFromCSV("MSW_AGE_DIST_CSV", ",", true);
     wsmAgeDist = matrixFromCSV("WSM_AGE_DIST_CSV", ",", true);
-
+    size_t n = maxAge - MIN_AGE;
+    truncateMatrix(msmAgeDist, n, n);
+    truncateMatrix(wswAgeDist, n, n);
+    truncateMatrix(mswAgeDist, n, n);
+    truncateMatrix(wsmAgeDist, n, n);
     // Probability single period is zero
     probZeroSinglePeriod = matrixFromCSV("PROB_ZERO_DAYS_SINGLE_CSV", ",", true);
 
@@ -298,11 +317,11 @@ public:
     if (parameterMap.at("OUTPUT_INIT_TIMING").dbl()) {
       csvout("TIMING", "INIT", elapsedTime);
     }
-    if (parameterMap.at("OUTPUT_AGENTS_AFTER_INIT").isSet()) {
-      printAgents(agents, simulationNum, startDate, stdout);
+    if (parameterMap.at("OUTPUT_AGENTS_INIT").isSet()) {
+      printAgents(agents, simulationNum, startDate);
     }
-    if (parameterMap.at("ANALYZE_AFTER_INIT").isSet()) {
-      analysis(true, true, false);
+    if (parameterMap.at("ANALYZE_INIT").isSet()) {
+      analysis(true, true, false, analyzeTruncatedAgeInit);
     }
 
     /* Main loop */
@@ -332,16 +351,16 @@ public:
         csvout("TIMING","DURING", elapsedTime);
       }
       if (outputAgents > 0 && (i + 1) % outputFrequency == 0) {
-        printAgents(agents, simulationNum, currentDate, stdout);
+        printAgents(agents, simulationNum, currentDate);
       }
       if ( stabilizationSteps > 0 && stabilizationSteps == i) {
-        if (analyzeAfterStabilization) analysis(true, true, true);
+        if (analyzeAfterStabilization) analysis(true, true, true, analyzeTruncatedAgeInit);
         if (outputAgentsAfterStabilization) {
-          printAgents(agents, simulationNum, currentDate, stdout);
+          printAgents(agents, simulationNum, currentDate);
         }
       } else if (analyzeFrequency &&
                  (i + 1) % analyzeFrequency == 0) {
-        analysis();
+        analysis(false, false, false, analyzeTruncatedAgeDuring);
       }
     }
 
@@ -352,9 +371,9 @@ public:
     }
 
     /* Wrap up */
-    outputAgents = parameterMap.at("OUTPUT_AGENTS_AT_END").dbl();
-    if (outputAgents) printAgents(agents, simulationNum, endDate, stdout);
-    if ( (unsigned) parameterMap.at("ANALYZE_AT_END").isSet()) {
+    outputAgents = parameterMap.at("OUTPUT_AGENTS_AFTER").dbl();
+    if (outputAgents) printAgents(agents, simulationNum, endDate);
+    if ( (unsigned) parameterMap.at("ANALYZE_AFTER").isSet()) {
       analysis(true, true, true);
     }
   }
@@ -377,7 +396,6 @@ public:
     return result;
   }
 
-
   /**
       Creates agents using Stefan Scholz's algorithm. Ported from R, hence
       some peculiarities. This function needs to be neatened and optimized.
@@ -395,28 +413,32 @@ public:
     DblMatrix mw = matrixFromCSV("MSW_DATA_CSV", ";", false);
     DblMatrix wm = matrixFromCSV("WSM_DATA_CSV", ";", false);
 
+    size_t rows = maxAge - MIN_AGE;
+    truncateMatrix(demographics,maxAge, 7);
+    truncateMatrix(singles, rows, 5);
+    truncateMatrix(partners, rows, 5);
+
     assert(singles.size());
 
     // Calculate initial infection rates matrices
     DblMatrix initialRates = matrixFromCSV("INITIAL_INFECTION_RATES_CSV",
                                            ",", true);
     double scaleInitialRates = parameterMap.at("SCALE_INITIAL_RATES").dbl();
-    std::vector<double> initialInfectionRatesMSW(MAX_AGE + 1, 0.0);
-    std::vector<double> initialInfectionRatesMSM(MAX_AGE + 1, 0.0);
-    std::vector<double> initialInfectionRatesWSM(MAX_AGE + 1, 0.0);
-    std::vector<double> initialInfectionRatesWSW(MAX_AGE + 1, 0.0);
+    std::vector<double> initialInfectionRatesMSW(MAX_AGE, 0.0);
+    std::vector<double> initialInfectionRatesMSM(MAX_AGE, 0.0);
+    std::vector<double> initialInfectionRatesWSM(MAX_AGE, 0.0);
+    std::vector<double> initialInfectionRatesWSW(MAX_AGE, 0.0);
     {
       unsigned i = 0;
       for (auto& row : initialRates) {
-        for (;i <= row[0] && i < MAX_AGE + 1; ++i) {
-          assert(i <= MAX_AGE);
+        for (;i <= row[0] && i < MAX_AGE; ++i) {
           initialInfectionRatesMSW[i] = row[1] * scaleInitialRates;
           initialInfectionRatesMSM[i] = row[2] * scaleInitialRates;
           initialInfectionRatesWSM[i] = row[3] * scaleInitialRates;
           initialInfectionRatesWSW[i] = row[4] * scaleInitialRates;
         }
       }
-      for (; i <= MAX_AGE; ++i) {
+      for (; i < MAX_AGE; ++i) {
         initialInfectionRatesMSW[i] = 0.0;
         initialInfectionRatesMSM[i] = 0.0;
         initialInfectionRatesWSM[i] = 0.0;
@@ -480,7 +502,7 @@ public:
    */
   inline void initAgent(Agent *agent,
                         const unsigned id,
-                        Sample& sampleAgeshare,
+                        Sample<>& sampleAgeshare,
                         const std::vector<double>& femRatio,
                         const std::vector<double>& wswRate,
                         const std::vector<double>& msmRate,
@@ -488,10 +510,10 @@ public:
                         const std::vector<double>& initialInfectionRatesMSM,
                         const std::vector<double>& initialInfectionRatesWSM,
                         const std::vector<double>& initialInfectionRatesWSW,
-                        std::vector<Sample>& sample_matWW,
-                        std::vector<Sample>& sample_matMW,
-                        std::vector<Sample>& sample_matWM,
-                        std::vector<Sample>& sample_matMM)
+                        std::vector<Sample<>>& sample_matWW,
+                        std::vector<Sample<>>& sample_matMW,
+                        std::vector<Sample<>>& sample_matWM,
+                        std::vector<Sample<>>& sample_matMM)
   {
     std::uniform_real_distribution<double> uni;
 
@@ -574,11 +596,11 @@ public:
                     const std::vector<double>& initialInfectionRatesWSW,
                     bool initial_relation)
   {
-    Sample sample_ageshare(ageShare, &rng);
-    vector<Sample> sample_matWW(matWW[0].size());
-    vector<Sample> sample_matMW(matMW[0].size());
-    vector<Sample> sample_matWM(matWM[0].size());
-    vector<Sample> sample_matMM(matMM[0].size());
+    Sample<> sample_ageshare(ageShare, &rng);
+    vector<Sample<>> sample_matWW(matWW[0].size());
+    vector<Sample<>> sample_matMW(matMW[0].size());
+    vector<Sample<>> sample_matWM(matWM[0].size());
+    vector<Sample<>> sample_matMM(matMM[0].size());
     std::vector<double> placeholder(matMM.size(), 0.000001);
 
     for (unsigned i = 0; i < matWW[0].size(); ++i) {
@@ -792,9 +814,10 @@ public:
      @param scoreStats[in] Whether or not to do partnership quality stats
   */
 
-  void analysis(bool orientationStats = false,
-                bool ageStats = false,
-                bool scoreStats = false)
+  void analysis(const bool orientationStats = false,
+                const bool ageStats = false,
+                const bool scoreStats = false,
+                const bool truncatedAge = false)
   {
     double prevalence = (double) (numInfectedMales + numInfectedFemales) /
       (numMales + numFemales);
@@ -853,6 +876,83 @@ public:
       csvout("ANALYSIS", "FAILED", failedMatches);
       csvout("ANALYSIS", "POOR", poorMatches);
     }
+    if (truncatedAge) {
+      unsigned numAgents = 0;
+      unsigned numMaleAgents = 0;
+      unsigned numFemaleAgents = 0;
+      unsigned numMswAgents = 0;
+      unsigned numWsmAgents = 0;
+      unsigned numMsmAgents = 0;
+      unsigned numWswAgents = 0;
+
+      unsigned numInfectedAgents = 0;
+      unsigned numInfectedMaleAgents = 0;
+      unsigned numInfectedFemaleAgents = 0;
+      unsigned numInfectedMswAgents = 0;
+      unsigned numInfectedWsmAgents = 0;
+      unsigned numInfectedMsmAgents = 0;
+      unsigned numInfectedWswAgents = 0;
+
+      for (auto& a: agents) {
+        if (a->age >= minAge && a->age < maxAge) {
+          ++numAgents;
+          if (a->sex == MALE) {
+            ++numMaleAgents;
+            if (a->sexual_orientation == HETEROSEXUAL) {
+              ++numMswAgents;
+            } else {
+              ++numMsmAgents;
+            }
+          } else {
+            ++numFemaleAgents;
+            if (a->sexual_orientation == HETEROSEXUAL) {
+              ++numWsmAgents;
+            } else {
+              ++numWswAgents;
+            }
+          }
+          if (a->infected) {
+            ++numInfectedAgents;
+            if (a->sex == MALE) {
+              ++numInfectedMaleAgents;
+              if (a->sexual_orientation == HETEROSEXUAL) {
+                ++numInfectedMswAgents;
+              } else {
+                ++numInfectedMsmAgents;
+              }
+            } else {
+              ++numInfectedFemaleAgents;
+              if (a->sexual_orientation == HETEROSEXUAL) {
+                ++numInfectedWsmAgents;
+              } else {
+                ++numInfectedWswAgents;
+              }
+            }
+          }
+        }
+      }
+      csvout("ANALYSIS", "AGE_RANGE", numAgents);
+      csvout("ANALYSIS", "AGE_RANGE_MALE", numMaleAgents);
+      csvout("ANALYSIS", "AGE_RANGE_FEMALE", numFemaleAgents);
+      csvout("ANALYSIS", "AGE_RANGE_MSW", numMswAgents);
+      csvout("ANALYSIS", "AGE_RANGE_WSM", numWsmAgents);
+      csvout("ANALYSIS", "AGE_RANGE_MSM", numMsmAgents);
+      csvout("ANALYSIS", "AGE_RANGE_WSW", numWswAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE",
+             (double) numInfectedAgents / numAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_MALE",
+             (double) numInfectedMaleAgents / numMaleAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_FEMALE",
+             (double) numInfectedFemaleAgents / numFemaleAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_MSW",
+             (double) numInfectedMswAgents / numMswAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_WSM",
+             (double) numInfectedWsmAgents / numWsmAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_MSM",
+             (double) numInfectedMsmAgents / numMsmAgents);
+      csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_WSW",
+             (double) numInfectedWswAgents / numWswAgents);
+    }
   }
 
   /**
@@ -875,7 +975,6 @@ public:
       }
     }
   }
-
 
   /**
      Writes analytical information in comma separated format to stdout.
@@ -1033,8 +1132,8 @@ public:
   double tableDistance(const Agent *a, const Agent *b) const
   {
     double score = 0.0;
-    unsigned a_age = std::min( (unsigned) a->age, (unsigned) MAX_AGE) - MIN_AGE;
-    unsigned b_age = std::min( (unsigned) b->age,  (unsigned) MAX_AGE) - MIN_AGE;
+    unsigned a_age = std::min( (unsigned) a->age, (unsigned) maxAge) - MIN_AGE;
+    unsigned b_age = std::min( (unsigned) b->age,  (unsigned) maxAge) - MIN_AGE;
 
     if (a->sex == MALE and b->sex == FEMALE) {
       score += (mswAgeDist[a_age][b_age] + wsmAgeDist[b_age][a_age]) * 25;

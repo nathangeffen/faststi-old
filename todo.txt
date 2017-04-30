@@ -1,5 +1,0 @@
-1. Change data files to only generate singles and first agent partners between
-12 and 49.
-2. Create analysis filters.
-3. Create run-in period, where no ageing takes place.
-4.

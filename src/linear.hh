@@ -13,5 +13,6 @@ std::vector<double> multVectors(const std::vector<double>&,
 std::vector<double> addVector(const std::vector<double>&,
                               const std::vector<double>&);
 double sumVector(const std::vector<double>&);
+void truncateMatrix(DblMatrix&, const size_t, const size_t);
 
 #endif

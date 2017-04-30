@@ -16,7 +16,7 @@ EXTRAFLAGS =
 OBJDIR = bin/
 SRCDIR = src/
 
-INCLUDES_CC = $(addprefix $(SRCDIR), simulate.hh agent.hh CSV_Parser.hh parameters.hh sample.hh linear.hh common.hh symboltable.hh stats.hh)
+INCLUDES_CC = $(addprefix $(SRCDIR), simulate.hh agent.hh CSV_Parser.hh parameters.hh sample.hh linear.hh common.hh symboltable.hh)
 INCLUDES_C = $(addprefix $(SRCDIR), csvparser.h ransampl.h)
 INCLUDES = $(INCLUDES_CC) $(INCLUDES_C)
 SOURCES_CC = main.cc simulate.cc agent.cc parameters.cc CSV_Parser.cc linear.cc

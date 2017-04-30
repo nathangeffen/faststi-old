@@ -162,6 +162,13 @@ public:
     addParameter("PREV_PARTNER_PENALTY",
                  "Previous partner penalty in pair matching", {10.0});
 
+    addParameter("MIN_AGE_TRUNCATE",
+                 "Maximum age to truncate the agents in data files (0 if no truncation)",
+                 {0});
+
+    addParameter("MAX_AGE_TRUNCATE",
+                 "Maximum age to truncate the agents in data files (0 if no truncation)",
+                 {0});
     addParameter("HET_MALE_INFECTIOUSNESS",
                  "Daily risk of infecting for male in heterosexual sex",
                  {0.005});
@@ -187,7 +194,7 @@ public:
                  "Score for which a poor match must be registered",
                  {49.50});
 
-    addParameter("OUTPUT_AGENTS_AFTER_INIT",
+    addParameter("OUTPUT_AGENTS_INIT",
                  "Print agent info after initialization"
                  "(0=no,1=yes)", {0.0});
     addParameter("OUTPUT_AGENTS_AFTER_STABILIZATION",
@@ -196,20 +203,26 @@ public:
     addParameter("OUTPUT_AGENTS_DURING_SIM",
                  "Print agent info during simulation"
                  "(0=no,1=yes), (frequency of output)", {0.0, 100.0});
-    addParameter("OUTPUT_AGENTS_AT_END",
+    addParameter("OUTPUT_AGENTS_AFTER",
                  "Print agent info at end of simulation "
                  "(0=no,1=yes)", {0.0});
 
-    addParameter("ANALYZE_AFTER_INIT",
+    addParameter("ANALYZE_INIT",
                  "Calculate stats after initialization", {1});
     addParameter("ANALYZE_AFTER_STABILIZATION",
                  "Calculate stats after initialization", {1});
     addParameter("ANALYZE_DURING_SIM",
                  "Calculate stats during simulation"
                  "(frequency of output, 0 for never)", {0});
-    addParameter("ANALYZE_AT_END",
+    addParameter("ANALYZE_AFTER",
                  "Calculate stats at end of simulation "
                  "(0=no,1=yes)", {1.0});
+    addParameter("ANALYZE_TRUNCATED_AGE_INIT",
+                 "Analyze user-specified min to max age group before simulation", {0});
+    addParameter("ANALYZE_TRUNCATED_AGE_DURING",
+                 "Analyze user-specified min to max age group during simulation", {0});
+    addParameter("ANALYZE_TRUNCATED_AGE_AFTER",
+                 "Analyze user-specified min to max age group after simulation", {0});
     addParameter("PRINT_PARAMETERS",
                  "Print parameters using in simulation"
                  "(0=no,1=all,2=Varying only)", {VARYING_PARMS});
@@ -322,7 +335,6 @@ public:
                  "File of shapes for partnership", "data/Rel_shape.csv");
     addParameter("SCALE_REL_CSV",
                  "File of scales for partnership", "data/Rel_scale.csv");
-
     addParameter("PROB_INFECTED_IF_PARTNER",
                  "Probability on initialization of an agent being infected "
                  "if its partner is infected", {0.5});

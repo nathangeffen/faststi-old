@@ -14,6 +14,10 @@
 #include "common.hh"
 #include "linear.hh"
 
+/**
+   Manages the behaviour of individual agents.
+ */
+
 class Agent {
 public:
   uint32_t id = 0;
@@ -36,6 +40,17 @@ public:
   unsigned num_infected = 0;
 
 
+  /**
+     Sets the length of the period for which two agents maintain a
+     relationship before breaking up.
+
+     @param currentDate[in] Current date in the simulation. This is the earliest
+     date that the relation can end.
+     @param shapeRelationshipPeriod[in] Weibull shape parameter matrix
+     @param scaleRelationshipPeriod[in] Weibull scale parameter matrix
+     @param scaleModifierRelationshipPeriod[in] Fitting parameter with which the
+     Weibull scale parameter is multiplied.
+  */
   void setRelationshipPeriod(const double currentDate,
                              const DblMatrix& shapeRelationshipPeriod,
                              const DblMatrix& scaleRelationshipPeriod,
@@ -65,6 +80,21 @@ public:
     partner->relationshipChangeDate = relationshipChangeDate;
   }
 
+  /**
+     Sets the period that an agent stays single before forming a relationship
+     again.
+
+     @param currentDate[in] Current date in the simulation. This is the earliest
+     date that the relation can end.
+     @param weibullSinglePeriod[in] Weibull shape and scale parameters matrix
+     @param scaleModifierSinglePeriod[in] Fitting parameter with which the
+     Weibull scale parameter is multiplied.
+     @param probZeroSinglePeriod[in] Probability agent remains single for zero
+     days.
+     @param probZeroSinglePeriodScale[in] Fitting parameter with which the
+     probability of zero period parameter is multiplied.
+   */
+
   void setSinglePeriod(const double currentDate,
                        const DblMatrix& weibullSinglePeriod,
                        const double scaleModifierSinglePeriod,
@@ -91,6 +121,12 @@ public:
     }
   }
 
+  /**
+     Checks if the agent is to be placed in the mating pool.
+
+     @param currentDate[in] Current date of the simulation.
+   */
+
   bool isMatchable(const double currentDate) const
   {
     if (partner == NULL && (currentDate + DAY / 2.0) >= relationshipChangeDate)
@@ -99,31 +135,41 @@ public:
       return false;
   }
 
-  void print(FILE *f = stdout) const
-  {
-    fprintf(f, "ID,%7u,Age,%3.2f,Sex,%c,Orientation,%c,Desired,%.0f",
-            id, age, (sex == MALE ? 'M' : 'F'),
-            (sexual_orientation == HETEROSEXUAL ? 'S' : 'G'), desired_age);
-    if (partner)
-      fprintf(f,",%7u", partner->id);
-    else
-      fprintf(f, ",      0");
-    fprintf(f, ",Date,%.3f,Infection,%d\n", relationshipChangeDate, infected);
-  }
 };
 
 typedef std::vector<Agent *> AgentVector;
-
-void printAgents(const AgentVector&, unsigned, double, FILE *);
+void printAgents(const AgentVector&, unsigned, double,
+                 std::ostream& = std::cout);
 std::ostream& operator<<(std::ostream& os, const Agent& agent);
+
+/**
+   Tracks partnerships across the simulation. This class is optimised to use
+   as little space as possiblee. It simply keeps the IDs of the two partner
+   agents in an unordered set (i.e. a hash table) where each element is
+   a 64 bit word.
+ */
 
 class Partnerships {
 public:
+
+  /**
+     Inserts a new partnership into the set.
+
+     @param id1[in] ID of one of the agents in the partnership
+     @param id2[in] ID of the other agent in the partnership
+   */
   void insert(const uint32_t id1, const uint32_t id2)
   {
     partnerships.insert(combine(id1, id2));
   }
 
+
+  /**
+     Checks if a partnership exists.
+
+     @param id1[in] ID of one of the agents in the partnership
+     @param id2[in] ID of the other agent in the partnership
+  */
   bool exists(const uint32_t id1, const uint32_t id2) const
   {
     if (partnerships.find(combine(id1, id2)) == partnerships.end())
@@ -136,7 +182,13 @@ public:
     return partnerships.size();
   }
 
-  //private:
+  /**
+     Combine two 32-bit IDs into one 64-bit word for insertion into the hash
+     table.
+
+     @param id1[in] ID of one of the agents in the partnership
+     @param id2[in] ID of the other agent in the partnership
+  */
   uint64_t combine(uint32_t id1, uint32_t id2) const
   {
     uint64_t A = id1 < id2 ? id1 : id2;
@@ -144,6 +196,10 @@ public:
     uint64_t C = A << 32 | B;
     return C;
   }
+
+  /**
+     Hash table that stores the partnerships
+  */
   std::unordered_set<uint64_t> partnerships;
 };
 

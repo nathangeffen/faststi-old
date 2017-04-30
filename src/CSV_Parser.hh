@@ -1,6 +1,10 @@
 #ifndef CSVPARSER_HH
 #define CSVPARSER_HH
 
+/**
+   C++ interface to C code of csvparser.
+*/
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,9 +18,16 @@ extern "C" {
 
 class CSVParser {
 public:
-  CSVParser(const char* filename,
-	    const char* delim = ",",
-	    const bool hasHeader = true)
+  /**
+     Reads a CSV file into memory.
+
+     @param filename[in] Name of CSV file
+     @param delim[in] CSV delimiter, defaults to comma
+     @param hasHeader[in] Whether the file has a header, defaults to true
+   */
+  explicit CSVParser(const char* filename,
+                     const char* delim = ",",
+                     const bool hasHeader = true)
   {
     csvparser = CsvParser_new(filename, delim, hasHeader);
     assert(csvparser);
@@ -37,6 +48,10 @@ public:
       string_rows.push_back(str_row);
     }
   };
+
+  /**
+     Converts the CSV cells into doubles.
+   */
   DblMatrix toDoubles() {
     DblMatrix double_rows;
     for (auto& r: string_rows) {
@@ -50,6 +65,7 @@ public:
     }
     return double_rows;
   };
+
   ~CSVParser() {
     for (auto& row: rows_) CsvParser_destroy_row(row);
     CsvParser_destroy(csvparser);
