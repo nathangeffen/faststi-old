@@ -44,6 +44,8 @@ std::ostream& operator<<(std::ostream& os, const Agent& agent)
            << ",Orientation," << (p->sexual_orientation == HETEROSEXUAL
                                   ? "S" : "G")
            << ",Desired," << p->desired_age;
+  } else {
+    stream << ",,,,,,,,,,";
   }
   stream << ",Date," << agent.relationshipChangeDate;
   os << stream.str();

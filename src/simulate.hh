@@ -106,6 +106,7 @@ public:
   bool analyzeTruncatedAgeInit = false;
   bool analyzeTruncatedAgeDuring = false;
   bool analyzeTruncatedAgeAfter = false;
+  bool incTruncatedAge = false;
 
   double currentDate;
   double failureThresholdScore;
@@ -268,17 +269,18 @@ public:
     if (minAge == 0) minAge = MIN_AGE;
     maxAge = parameterMap.at("MAX_AGE_TRUNCATE").dbl();
     if (maxAge == 0) maxAge = MAX_AGE;
+    incTruncatedAge = parameterMap.at("INC_TRUNCATED_AGE").isSet();
 
     // Age distribution matrices
     msmAgeDist = matrixFromCSV("MSM_AGE_DIST_CSV", ",", true);
     wswAgeDist = matrixFromCSV("WSW_AGE_DIST_CSV", ",", true);
     mswAgeDist = matrixFromCSV("MSW_AGE_DIST_CSV", ",", true);
     wsmAgeDist = matrixFromCSV("WSM_AGE_DIST_CSV", ",", true);
-    size_t n = maxAge - MIN_AGE;
-    truncateMatrix(msmAgeDist, n, n);
-    truncateMatrix(wswAgeDist, n, n);
-    truncateMatrix(mswAgeDist, n, n);
-    truncateMatrix(wsmAgeDist, n, n);
+    // size_t n = maxAge - MIN_AGE;
+    // truncateMatrix(msmAgeDist, n, n);
+    // truncateMatrix(wswAgeDist, n, n);
+    // truncateMatrix(mswAgeDist, n, n);
+    // truncateMatrix(wsmAgeDist, n, n);
     // Probability single period is zero
     probZeroSinglePeriod = matrixFromCSV("PROB_ZERO_DAYS_SINGLE_CSV", ",", true);
 
@@ -892,9 +894,17 @@ public:
       unsigned numInfectedWsmAgents = 0;
       unsigned numInfectedMsmAgents = 0;
       unsigned numInfectedWswAgents = 0;
-
+      double fromAge = minAge;
+      double toAge = maxAge;
+      if (incTruncatedAge == true) {
+        if ((currentDate + EPSILON)  >= startDate) {
+          double dateIncrement = currentDate - startDate;
+          fromAge += dateIncrement;
+          toAge += dateIncrement;
+        }
+      }
       for (auto& a: agents) {
-        if (a->age >= minAge && a->age < maxAge) {
+        if ( (a->age + EPSILON) >= fromAge && a->age < toAge) {
           ++numAgents;
           if (a->sex == MALE) {
             ++numMaleAgents;
@@ -1132,8 +1142,8 @@ public:
   double tableDistance(const Agent *a, const Agent *b) const
   {
     double score = 0.0;
-    unsigned a_age = std::min( (unsigned) a->age, (unsigned) maxAge) - MIN_AGE;
-    unsigned b_age = std::min( (unsigned) b->age,  (unsigned) maxAge) - MIN_AGE;
+    unsigned a_age = std::min( (unsigned) a->age, (unsigned) MAX_AGE - 1) - MIN_AGE;
+    unsigned b_age = std::min( (unsigned) b->age,  (unsigned) MAX_AGE - 1) - MIN_AGE;
 
     if (a->sex == MALE and b->sex == FEMALE) {
       score += (mswAgeDist[a_age][b_age] + wsmAgeDist[b_age][a_age]) * 25;

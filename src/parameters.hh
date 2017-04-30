@@ -147,7 +147,7 @@ public:
     addParameter("NUM_SIMULATIONS",
                  "Number of simulations to execute (default is 1)", {1});
     addParameter("NUM_THREADS",
-                 "Number of threads (default is one per simulation - 0)", {0});
+                 "Number of threads. Default is one thread. 0 uses number of cores.", {1});
     addParameter("NUM_AGENTS", "Number of agents", {1000.0});
     addParameter("CSV_HEADER", "Write CSV column names", {1});
     addParameter("START_DATE",
@@ -169,6 +169,7 @@ public:
     addParameter("MAX_AGE_TRUNCATE",
                  "Maximum age to truncate the agents in data files (0 if no truncation)",
                  {0});
+
     addParameter("HET_MALE_INFECTIOUSNESS",
                  "Daily risk of infecting for male in heterosexual sex",
                  {0.005});
@@ -223,10 +224,10 @@ public:
                  "Analyze user-specified min to max age group during simulation", {0});
     addParameter("ANALYZE_TRUNCATED_AGE_AFTER",
                  "Analyze user-specified min to max age group after simulation", {0});
+    addParameter("INC_TRUNCATED_AGE", "Increment min and max age by time steps", {0});
     addParameter("PRINT_PARAMETERS",
                  "Print parameters using in simulation"
                  "(0=no,1=all,2=Varying only)", {VARYING_PARMS});
-
 
     addParameter("OUTPUT_INIT_TIMING",
                  "Output time every x iterations", {0});
@@ -286,6 +287,10 @@ public:
     addParameter("RANDOM_SEED", "Value to set random seed to",
                  {1});
 
+    addParameter("PROB_ZERO_DAYS_SINGLE_CSV",
+                 "File of probabilities by age that agents stay single for "
+                 "zero days.", "data/probZeroDays.csv");
+
     addParameter("WEIBULL_SINGLE_INITIAL_CSV",
                  "File of scales and shapes for single period during simulation",
                  "data/SingleInitial.csv");
@@ -293,6 +298,16 @@ public:
     addParameter("WEIBULL_SINGLE_DURING_CSV",
                  "File of scales and shapes for single period during simulation",
                  "data/SingleDuring.csv");
+
+    addParameter("SHAPE_REL_CSV",
+                 "File of shapes for partnership", "data/Rel_shape.csv");
+    addParameter("SCALE_REL_CSV",
+                 "File of scales for partnership", "data/Rel_scale.csv");
+
+    addParameter("PROB_INFECTED_IF_PARTNER",
+                 "Probability on initialization of an agent being infected "
+                 "if its partner is infected", {0.5});
+
 
     // Parameters that may need to be fitted
 
@@ -311,15 +326,10 @@ public:
                  "Multiply Weibull during simulation single period  scale "
                  "parameters by this", {1.0});
 
-
     addParameter("MEAN_SINGLE_PERIOD",
                  "Mean difference from expected single period", {0});
     addParameter("SD_SINGLE_PERIOD",
                  "Standard deviation of single period", {3.0});
-
-    addParameter("PROB_ZERO_DAYS_SINGLE_CSV",
-                 "File of probabilities by age that agents stay single for "
-                 "zero days.", "data/probZeroDays.csv");
 
     addParameter("SCALE_RELATIONSHIP_PERIOD_INITIAL",
                  "Multiply relationship scale parameters by this", {1.0 / 3.0});
@@ -329,15 +339,6 @@ public:
                  "Mean difference from expected relationship period.", {0});
     addParameter("SD_RELATIONSHIP_PERIOD",
                  "Standard deviation of relationship period.", {3.0});
-
-
-    addParameter("SHAPE_REL_CSV",
-                 "File of shapes for partnership", "data/Rel_shape.csv");
-    addParameter("SCALE_REL_CSV",
-                 "File of scales for partnership", "data/Rel_scale.csv");
-    addParameter("PROB_INFECTED_IF_PARTNER",
-                 "Probability on initialization of an agent being infected "
-                 "if its partner is infected", {0.5});
 
     // DEBUGGING - IGNORED IN RELEASE MODE
 

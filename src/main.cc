@@ -53,32 +53,31 @@ int main(int argc, char *argv[])
       "-t: run tests.\n";
     ParameterMap parameterMap;
     parameterMap.print(0, std::string(""));
-    exit(1);
-  }
+  } else {
 
-  // In some implementations executing this may dramatically speed up
-  // writing to standard output.
-  // std::ios::sync_with_stdio(false);
+    // In some implementations executing this may dramatically speed up
+    // writing to standard output.
+    // std::ios::sync_with_stdio(false);
 
-  const char *seed_str = getCmdOption(argv, argv + argc, "-s");
-  std::vector<ParameterMap> parameterMaps;
-  const char *input_file_str = getCmdOption(argv, argv + argc, "-f");
-  if (input_file_str) {
-    std::ifstream infile;
-    infile.open (input_file_str, std::ifstream::in);
-    if (infile.fail()) {
+    const char *seed_str = getCmdOption(argv, argv + argc, "-s");
+    std::vector<ParameterMap> parameterMaps;
+    const char *input_file_str = getCmdOption(argv, argv + argc, "-f");
+    if (input_file_str) {
+      std::ifstream infile;
+      infile.open (input_file_str, std::ifstream::in);
+      if (infile.fail()) {
+        infile.close();
+        std::cerr << "Error opening " << input_file_str << std::endl;
+        exit(1);
+      }
+      readParameters(infile, parameterMaps);
       infile.close();
-      std::cerr << "Error opening " << input_file_str << std::endl;
-      exit(1);
     }
-    readParameters(infile, parameterMaps);
-    infile.close();
+    if (cmdOptionExists(argv, argv + argc, "-t")) {
+      ParameterMap parameterMap;
+      runTests(parameterMap);
+    }
+    execSimulationSet(parameterMaps, seed_str ? atoi(seed_str) : 1);
   }
-
-  if (cmdOptionExists(argv, argv + argc, "-t")) {
-    ParameterMap parameterMap;
-    runTests(parameterMap);
-  }
-
-  execSimulationSet(parameterMaps, seed_str ? atoi(seed_str) : 1);
+  return 0;
 }

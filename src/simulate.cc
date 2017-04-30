@@ -7,6 +7,7 @@
    @license GPL v3
 */
 
+#include <unistd.h>
 #include "simulate.hh"
 
 thread_local std::mt19937 rng;
@@ -408,7 +409,11 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
 
     // Organise threads
     unsigned numThreads = parameterMap.at("NUM_THREADS").dbl();
-    if (numThreads == 0) numThreads = numSimulations;
+    if (numThreads == 0) {
+      numThreads = sysconf(_SC_NPROCESSORS_ONLN);
+      if (numThreads == 0) numThreads = 1;
+      std::cerr << "D0: " << numThreads << std::endl;
+    }
     if (numSimulations < numThreads) numThreads = numSimulations;
     unsigned simulationsPerThread = numSimulations / numThreads;
     if (simulationsPerThread * numThreads < numSimulations) ++numThreads;
