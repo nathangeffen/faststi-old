@@ -412,7 +412,6 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
     if (numThreads == 0) {
       numThreads = sysconf(_SC_NPROCESSORS_ONLN);
       if (numThreads == 0) numThreads = 1;
-      std::cerr << "D0: " << numThreads << std::endl;
     }
     if (numSimulations < numThreads) numThreads = numSimulations;
     unsigned simulationsPerThread = numSimulations / numThreads;
