@@ -18,7 +18,7 @@ if (length(args)==0) {
   filename = args[1]
 }
 
-print(sprintf("Reading file: %s\n", filename))
+print(sprintf("Reading file: %s", filename))
 inp = read.csv(filename, TRUE)
 print("Getting parameters")
 parameters = inp[inp$Desc1=="PARAMETER",]
