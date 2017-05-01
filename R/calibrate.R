@@ -18,9 +18,13 @@ if (length(args)==0) {
   filename = args[1]
 }
 
+print(sprintf("Reading file: %s\n", filename))
 inp = read.csv(filename, TRUE)
+print("Getting parameters")
 parameters = inp[inp$Desc1=="PARAMETER",]
+print("Getting matings")
 matingpool = inp[inp$Desc1 == "MATINGPOOL" & inp$Date >= 2017.0,]
+print("Getting breakups")
 breakups = inp[inp$Desc1 == "BREAKUPS" & inp$Date >= 2017.0,]
 
 # sd_matingpool =  aggregate(matingpool$Value, by=list(matingpool$Num), FUN=sd)
@@ -35,6 +39,7 @@ breakups = inp[inp$Desc1 == "BREAKUPS" & inp$Date >= 2017.0,]
 # sim_num = which(sd_combined$x==min(sd_combined$x)) - 1
 # best_parameters_combined_sd = parameters[parameters$Num==sim_num,]
 
+print("Beginning tests of linearality")
 lm_matingpool = by(matingpool,matingpool$Num, 
                    function(x) {
                      print(sprintf("Mating num: %d",x$Num[1]))
