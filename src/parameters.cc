@@ -3,8 +3,8 @@
 /**
    Populates a vector of ParameterMaps by reading parameters from a stream.
 
-   @param input is the stream read from
-   @param parameterMaps is the vector to populate
+   @param input[in] is the stream read from
+   @param parameterMaps[out] is the vector to populate
 */
 
 void readParameters(std::istream& input,
@@ -22,7 +22,7 @@ void readParameters(std::istream& input,
     if (lineString.size() == 0) continue;
     if (lineString[0] == '#') continue;
     if (lineString[0] == '-') {
-      parameterMaps.push_back(ParameterMap());
+      parameterMaps.push_back(parameterMaps.back());
       continue;
     }
     if (lineString.back() == '@') rangeType = THREE_PARM;

@@ -17,6 +17,10 @@ tmp*.csv
 # ignore files created by fitting
 inputToFaststi.csv
 outputFromFaststi.csv
+tmp*
+bestParmsInitial.csv
+finalFittedParms.txt
+
 
 # ignore backup and swap files created by Emacs and VIM
 *~
