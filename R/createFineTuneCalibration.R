@@ -110,4 +110,4 @@ system("Rscript R/calibrate.R tmp5.csv >tmp6.csv")
 cmd = 'grep CALIBRATE tmp6.csv |  awk \'{print "CALIBRATE,"$3",2017.000,PARAMETER,"}\' | uniq | tail -1 | grep -f - tmp5.csv | awk -F "," \'{print $5" "$6}\' >tmp11.txt'
 system(cmd)
 
-system("cat tmp7.txt tmp8.txt tmp9.txt tmp10.txt tmp11.txt >final_fitted_parms.txt")
+system("cat tmp7.txt tmp8.txt tmp9.txt tmp10.txt tmp11.txt >finalFittedParms.txt")
