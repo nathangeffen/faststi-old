@@ -1,4 +1,12 @@
 
+spaceSeparatedList <- function(sq) {
+    result = ""
+    for (i in sq) {
+        result = paste(result, toString(i))
+    }
+    result
+}
+
 
 print(sprintf("Reading file bestParmsInitial.csv"))
 inp = read.csv("bestParmsInitial.csv", TRUE)
