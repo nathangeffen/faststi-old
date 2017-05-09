@@ -1,7 +1,7 @@
 # This parameter file is frequently changed. It is used to test new features.
 
 SIMULATION_NAME SIM_1
-NUM_AGENTS 1000000
+NUM_AGENTS 20000
 NUM_SIMULATIONS 1
 NUM_THREADS 1
 OUTPUT_AGENTS_INIT 0
