@@ -14,8 +14,12 @@ echo `date` Prefix parms for 20k runs
 cat finalFittedParms.txt parms/parms_20k.txt >tmp_inp_20k.txt
 echo `date` Executing 20k runs
 ./faststi -f tmp_inp_20k.txt >tmp_out_20k.csv
+echo `date` Analysing 20k runs
+Rscript R/analyseOutput.R tmp_out_20k.csv >analysis20k.txt
 echo `date` Prefix parms for 40m runs
 cat finalFittedParms.txt parms/parms_40m.txt >tmp_inp_40m.txt
 echo `date` Executing 40m runs
 ./faststi -f tmp_inp_40m.txt >tmp_out_40m.csv
+echo `date` Analysing 40m runs
+Rscript R/analyseOutput.R tmp_out_40m.csv >analysis40m.txt
 echo `date` All done
