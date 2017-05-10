@@ -1,6 +1,6 @@
 /**
    Manages parameters and configuration file that contains parameters.
- */
+*/
 
 #ifndef PARAMETERS_HH
 #define PARAMETERS_HH

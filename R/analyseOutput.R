@@ -84,7 +84,7 @@ calcPrevalenceForDate <- function(date_of_analysis) {
 }
 
 initialprevs = calcPrevalenceForDate(2017)
-finalprevs = calcPrevalenceForDate(2019)
+finalprevs = calcPrevalenceForDate(2020)
 
 format_prevs <- function(prevs) {
   categories = c("ALL", "Males", "Females", "MSM", "WSW",
@@ -93,22 +93,22 @@ format_prevs <- function(prevs) {
                  "Male 35-39", "Female 35-39", "Male 40-44", "Female 40-44",
                  "Male 45-49", "Female 45-49")
   vals = rep(-1, length(categories))
-  tex_col_names = c("RPM 0.001", "RKPM 0.001", "CSPM 0.001", "BF 0.001", "BLOSSOM 0.001",
-                  "RPM 0.01", "RKPM 0.01", "CSPM 0.01", "BF 0.01", "BLOSSOM 0.01",
-                  "RPM 0.1", "RKPM 0.1", "CSPM 0.1", "BF 0.1", "BLOSSOM 0.1")
+  tex_col_names = c("RPM 0.001", "RKPM 0.001", "CSPM 0.001", "BFPM 0.001", "BLOSSOM 0.001",
+                  "RPM 0.01", "RKPM 0.01", "CSPM 0.01", "BFPM 0.01", "BLOSSOM 0.01",
+                  "RPM 0.1", "RKPM 0.1", "CSPM 0.1", "BFPM 0.1", "BLOSSOM 0.1")
   r_col_names = gsub(" ","_", tex_col_names)
   r_col_names = gsub("[.]", "_", r_col_names)
   output_table = data.frame(row.names = categories)
 
   tex_row_names = row.names(output_table)
   s = toupper(tex_row_names)
-  s = gsub(" ","_0", s)
-  s = gsub("-","-0", s)
-  s = gsub("MALE", "MALE_AGE", s)
-  s = gsub("WSW", "WSWPREVALENCE", s)
-  s = gsub("MSM", "MSMPREVALENCE", s)
+  s = gsub(" ","_", s)
+  #s = gsub("-","-0", s)
+  s = gsub("MALE", "MALE_PREVALENCE_AGE", s)
+  s = gsub("WSW", "WSW_PREVALENCE", s)
+  s = gsub("MSM", "MSM_PREVALENCE", s)
   s = gsub("ALL", "PREVALENCE", s)
-  r_row_names = gsub("MALE_AGES", "MALEPREVALENCE", s)
+  r_row_names = gsub("MALE_AGES", "MALE_PREVALENCE", s)
   for (i in c(0:length(r_row_names))) {
     for (j in c(0:length(r_col_names))) {
       expected = format(round(subset(prevs,measure==r_row_names[i] &
@@ -136,7 +136,7 @@ print(xtable(output_table_final))
 # Scores
 
 scores = inp[inp$Desc2 == "SCORE",]
-scores = scores[scores$Date==2019,]
+scores = scores[scores$Date==2020,]
 mean_scores =  aggregate(scores$Value, by=list(scores$Name),
                               FUN=mean)
 sd_scores = aggregate(scores$Value, by=list(scores$Name),
@@ -157,7 +157,7 @@ print(ci_scores_97_5)
 # Poor
 
 poor = inp[inp$Desc2 == "POOR",]
-poor = poor[poor$Date==2019,]
+poor = poor[poor$Date==2020,]
 mean_poor =  aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
                          FUN=mean)
 sd_poor = aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
@@ -167,7 +167,6 @@ ci_poor_02_5 = aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
 ci_poor_97_5 = aggregate(poor$Value, by=list(poor$Name,poor$Desc2),
                            FUN=confinterval_97_5)
 
-                                FUN=confinterval_97_5)
 print("POOR")
 print(mean_poor)
 print(sd_poor)

@@ -834,12 +834,12 @@ public:
     csvout("ANALYSIS", "PARTNERSHIPS", totalPartnerships);
 
     if (orientationStats) {
-      csvout("ANALYSIS", "MALEPREVALENCE", malePrevalence);
-      csvout("ANALYSIS", "FEMALEPREVALENCE", femalePrevalence);
-      csvout("ANALYSIS", "MSMPREVALENCE", msmPrevalence);
-      csvout("ANALYSIS", "WSWPREVALENCE", wswPrevalence);
-      csvout("ANALYSIS", "MSMPARTNERSHIPS", totalMsmPartnerships);
-      csvout("ANALYSIS", "WSWPARTNERSHIPS", totalWswPartnerships);
+      csvout("ANALYSIS", "MALE_PREVALENCE", malePrevalence);
+      csvout("ANALYSIS", "FEMALE_PREVALENCE", femalePrevalence);
+      csvout("ANALYSIS", "MSM_PREVALENCE", msmPrevalence);
+      csvout("ANALYSIS", "WSW_PREVALENCE", wswPrevalence);
+      csvout("ANALYSIS", "MSM_PARTNERSHIPS", totalMsmPartnerships);
+      csvout("ANALYSIS", "WSW_PARTNERSHIPS", totalWswPartnerships);
     }
 
     if (ageStats) {
