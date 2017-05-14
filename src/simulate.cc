@@ -138,10 +138,17 @@ void infectEvent(Simulation* simulation)
 
 void breakupEvent(Simulation* simulation)
 {
+  // double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
+  // double sd = simulation->sdRatePairs * mean;
+  // std::normal_distribution<double> dist(mean, sd);
+  // unsigned maxBreakups = (unsigned) std::max(0.0, dist(rng));
+  // std::shuffle(simulation->agents.begin(), simulation->agents.end(), rng);
+
   unsigned breakups = 0;
   for (auto& agent: simulation->agents) {
+    //  if (breakups >= maxBreakups) break;
     if (agent->partner &&
-        ( (simulation->currentDate + EPSILON) >=
+        ( (simulation->currentDate + 0.5) >
           agent->relationshipChangeDate) ) {
       Agent* partner = agent->partner;
       agent->partner = NULL;
@@ -169,7 +176,7 @@ void randomMatchEvent(Simulation* simulation)
   // double elapsedTime;
   // gettimeofday(&timeBegin, NULL);
 
-  AgentVector unmatchedAgents = simulation->getShuffledUnmatchedAgents();
+  AgentVector unmatchedAgents = simulation->getMatingPool();
 
   if (unmatchedAgents.size() > 0)
     for (size_t i = 0; i < unmatchedAgents.size()  - 1; i += 2)
@@ -180,7 +187,7 @@ void randomMatchEvent(Simulation* simulation)
 
 void randomKMatchEvent(Simulation *simulation)
 {
-  AgentVector unmatchedAgents = simulation->getShuffledUnmatchedAgents();
+  AgentVector unmatchedAgents = simulation->getMatingPool();
 
   if(unmatchedAgents.size()) {
     for (auto it = unmatchedAgents.begin(); it < unmatchedAgents.end() - 1;
@@ -199,7 +206,7 @@ void randomKMatchEvent(Simulation *simulation)
 
 void clusterShuffleMatchEvent(Simulation* simulation)
 {
-  AgentVector unmatchedAgents = simulation->getShuffledUnmatchedAgents();
+  AgentVector unmatchedAgents = simulation->getMatingPool();
   uint64_t cluster_size = unmatchedAgents.size() / simulation->clusters;
   for (auto& a : unmatchedAgents) a->weight = simulation->clusterValue(a);
   sort(unmatchedAgents.rbegin(), unmatchedAgents.rend(), [](Agent *a, Agent *b)
@@ -247,7 +254,7 @@ void graphPairs(const char *graph,
 
 void blossomVMatchEvent(Simulation* simulation)
 {
-  AgentVector agents = simulation->getShuffledUnmatchedAgents();
+  AgentVector agents = simulation->getMatingPool();
 
   if (agents.size() == 0) return;
 

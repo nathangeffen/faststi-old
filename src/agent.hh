@@ -72,12 +72,24 @@ public:
     shape = shapeRelationshipPeriod[ index1 ] [ index2 ];
     scale = scaleRelationshipPeriod[ index1 ] [ index2 ];
     scale += relationshipPeriodDeviation + partner->relationshipPeriodDeviation;
-    scale *= scaleModifierRelationshipPeriod;
+    // scale *= scaleModifierRelationshipPeriod;
     std::weibull_distribution<double> dist(shape, std::max(scale, EPSILON) );
-    double relationshipLength = dist(rng);
+    double relationshipLength = dist(rng) * scaleModifierRelationshipPeriod;
+    // std::cerr << "D0: " << relationshipLength << std::endl;
     relationshipChangeDate = std::max(currentDate,
                                       currentDate + relationshipLength);
     partner->relationshipChangeDate = relationshipChangeDate;
+
+#ifdef LOGGING
+      std::ostringstream stream;
+      stream << "LOGAGENTREL," << id << "," << age << ","
+             << sex << "," << sexual_orientation
+             << "," << partner->id << "," << index1 << "," << index2 << ","
+             << shape << "," << scale  << ","
+             << currentDate << "," << relationshipChangeDate << std::endl;
+      std::cout << stream.str();
+#endif
+
   }
 
   /**
@@ -104,21 +116,29 @@ public:
     std::uniform_real_distribution<double> uni;
     unsigned index = std::min( (unsigned) age - MIN_AGE,
                                (unsigned) MAX_AGE_CSV);
-
+    double shape = 0.0, scale = 0.0;
     double prob = probZeroSinglePeriod[index][sex] * probZeroSinglePeriodScale;
     if (uni(rng) < prob) {
       relationshipChangeDate = currentDate;
     } else {
-      double shape = weibullSinglePeriod[index][sex * 2];
-      double scale = weibullSinglePeriod[index][sex * 2 + 1]
+      shape = weibullSinglePeriod[index][sex * 2];
+      scale = weibullSinglePeriod[index][sex * 2 + 1]
         + singlePeriodDeviation;
-      scale *= scaleModifierSinglePeriod;
-      std::weibull_distribution<double> dist(shape,
-                                             std::max(scale,
-                                                      EPSILON));
+      // scale *= scaleModifierSinglePeriod;
+      std::weibull_distribution<double> dist(shape, std::max(scale, EPSILON));
+      double timeSingle  = dist(rng) * scaleModifierSinglePeriod;
       relationshipChangeDate = std::max(currentDate,
-                                        currentDate + (double) dist(rng) * DAY);
+                                        currentDate + timeSingle);
     }
+#ifdef LOGGING
+    std::ostringstream stream;
+    stream << "LOGAGENTSIN," << id << "," << age
+           << "," << sex << "," << sexual_orientation
+           << "," << 0 << "," << index << "," << 0 << ","
+           << shape << "," << scale  << ","
+           << currentDate << "," << relationshipChangeDate << std::endl;
+    std::cout << stream.str();
+#endif
   }
 
   /**

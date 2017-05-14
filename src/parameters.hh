@@ -163,7 +163,7 @@ public:
                  "Previous partner penalty in pair matching", {10.0});
 
     addParameter("MIN_AGE_TRUNCATE",
-                 "Maximum age to truncate the agents in data files (0 if no truncation)",
+                 "Minimum age to truncate the agents in data files (0 if no truncation)",
                  {0});
 
     addParameter("MAX_AGE_TRUNCATE",
@@ -224,6 +224,13 @@ public:
                  "Analyze user-specified min to max age group during simulation", {0});
     addParameter("ANALYZE_TRUNCATED_AGE_AFTER",
                  "Analyze user-specified min to max age group after simulation", {0});
+    addParameter("ANALYZE_SINGLES_INIT",
+                 "Analyze number of singles before simulation", {0});
+    addParameter("ANALYZE_SINGLES_DURING",
+                 "Analyze number of singles during simulation", {0});
+    addParameter("ANALYZE_SINGLES_AFTER",
+                 "Analyze number of singles after simulation", {0});
+
     addParameter("INC_TRUNCATED_AGE", "Increment min and max age by time steps", {0});
     addParameter("PRINT_PARAMETERS",
                  "Print parameters using in simulation"
@@ -307,6 +314,11 @@ public:
     addParameter("PROB_INFECTED_IF_PARTNER",
                  "Probability on initialization of an agent being infected "
                  "if its partner is infected", {0.5});
+
+    addParameter("MEAN_RATE_PAIRS",
+                 "Mean time step rate of number of partnerships", {0.005});
+    addParameter("SD_RATE_PAIRS",
+                 "Standard deviation rate of mean number of partnerships", {0.1});
 
 
     // Parameters that may need to be fitted

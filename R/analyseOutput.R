@@ -104,10 +104,11 @@ format_prevs <- function(prevs) {
   s = toupper(tex_row_names)
   s = gsub(" ","_", s)
   #s = gsub("-","-0", s)
-  s = gsub("MALE", "MALE_PREVALENCE_AGE", s)
+  s = gsub("MALE_", "MALE_PREVALENCE_AGE_", s)
   s = gsub("WSW", "WSW_PREVALENCE", s)
   s = gsub("MSM", "MSM_PREVALENCE", s)
   s = gsub("ALL", "PREVALENCE", s)
+  s = gsub("MALES", "MALE_PREVALENCE", s)
   r_row_names = gsub("MALE_AGES", "MALE_PREVALENCE", s)
   for (i in c(0:length(r_row_names))) {
     for (j in c(0:length(r_col_names))) {

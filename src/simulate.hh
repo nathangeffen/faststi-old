@@ -101,11 +101,17 @@ public:
   double homFemaleInfectiousness;
   double probInfectedIfPartnerInfected;
 
+  double meanRatePairsTimeStep;
+  double sdRatePairs;
+
   bool printNumMatings;
   bool printNumBreakups;
   bool analyzeTruncatedAgeInit = false;
   bool analyzeTruncatedAgeDuring = false;
   bool analyzeTruncatedAgeAfter = false;
+  bool analyzeSinglesInit = false;
+  bool analyzeSinglesDuring = false;
+  bool analyzeSinglesAfter = false;
   bool incTruncatedAge = false;
 
   double currentDate;
@@ -184,7 +190,11 @@ public:
     analyzeTruncatedAgeInit = parameterMap.at("ANALYZE_TRUNCATED_AGE_INIT").isSet();
     analyzeTruncatedAgeDuring = parameterMap.at("ANALYZE_TRUNCATED_AGE_DURING").isSet();
     analyzeTruncatedAgeAfter = parameterMap.at("ANALYZE_TRUNCATED_AGE_AFTER").isSet();
-
+    analyzeSinglesInit = parameterMap.at("ANALYZE_SINGLES_INIT").isSet();
+    analyzeSinglesDuring = parameterMap.at("ANALYZE_SINGLES_DURING").isSet();
+    analyzeSinglesAfter = parameterMap.at("ANALYZE_SINGLES_AFTER").isSet();
+    meanRatePairsTimeStep = parameterMap.at("MEAN_RATE_PAIRS").dbl();
+    sdRatePairs = parameterMap.at("SD_RATE_PAIRS").dbl();
 
     // Initialize thread local random number generator
     unsigned seed = parameterMap.at("RANDOM_SEED").dbl() * (simulationNum + 1);
@@ -323,7 +333,7 @@ public:
       printAgents(agents, simulationNum, startDate);
     }
     if (parameterMap.at("ANALYZE_INIT").isSet()) {
-      analysis(true, true, false, analyzeTruncatedAgeInit);
+      analysis(true, true, false, analyzeTruncatedAgeInit, analyzeSinglesInit);
     }
 
     /* Main loop */
@@ -356,13 +366,14 @@ public:
         printAgents(agents, simulationNum, currentDate);
       }
       if ( stabilizationSteps > 0 && stabilizationSteps == i) {
-        if (analyzeAfterStabilization) analysis(true, true, true, analyzeTruncatedAgeInit);
+        if (analyzeAfterStabilization) analysis(true, true, true, analyzeTruncatedAgeInit,
+                                                analyzeSinglesInit);
         if (outputAgentsAfterStabilization) {
           printAgents(agents, simulationNum, currentDate);
         }
       } else if (analyzeFrequency &&
                  (i + 1) % analyzeFrequency == 0) {
-        analysis(false, false, false, analyzeTruncatedAgeDuring);
+        analysis(false, false, false, analyzeTruncatedAgeDuring, analyzeSinglesDuring);
       }
     }
 
@@ -376,7 +387,7 @@ public:
     outputAgents = parameterMap.at("OUTPUT_AGENTS_AFTER").dbl();
     if (outputAgents) printAgents(agents, simulationNum, endDate);
     if ( (unsigned) parameterMap.at("ANALYZE_AFTER").isSet()) {
-      analysis(true, true, true);
+      analysis(true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter);
     }
   }
 
@@ -750,32 +761,26 @@ public:
     }
   }
 
-
   /**
      Creates the mating pool on each iteration of the time step.
-   */
-  AgentVector getUnmatchedAgents()
+  */
+  AgentVector getMatingPool()
   {
+    // double mean = meanRatePairsTimeStep * agents.size();
+    // double sd = sdRatePairs * mean;
+    // std::normal_distribution<double> dist(mean, sd);
+    // unsigned maxMatingAgents = 2 * (unsigned) std::max(0.0, dist(rng));
+    // std::shuffle(agents.begin(), agents.end(), rng);
+
     AgentVector matingPool;
     for (auto& agent : agents) {
+      //      if (matingPool.size() >= maxMatingAgents) break;
       if (agent->isMatchable(currentDate))
         matingPool.push_back(agent);
     }
-    return matingPool;
-  }
-
-  /**
-     Shuffles the mating pool.
-   */
-  AgentVector getShuffledUnmatchedAgents()
-  {
-    AgentVector matingPool = getUnmatchedAgents();
-    shuffle(matingPool.begin(), matingPool.end(), rng);
-    // Remove back agent if odd
     if (matingPool.size() % 2 == 1) matingPool.pop_back();
-    if (printNumMatings) {
-      csvout("MATINGPOOL", "", matingPool.size());
-    }
+    if (printNumMatings) csvout("MATINGPOOL", "", matingPool.size());
+    std::shuffle(matingPool.begin(), matingPool.end(), rng);
     return matingPool;
   }
 
@@ -819,7 +824,8 @@ public:
   void analysis(const bool orientationStats = false,
                 const bool ageStats = false,
                 const bool scoreStats = false,
-                const bool truncatedAge = false)
+                const bool truncatedAge = false,
+                const bool singleStats = false)
   {
     double prevalence = (double) (numInfectedMales + numInfectedFemales) /
       (numMales + numFemales);
@@ -962,6 +968,11 @@ public:
              (double) numInfectedMsmAgents / numMsmAgents);
       csvout("ANALYSIS", "AGE_RANGE_PREVALENCE_WSW",
              (double) numInfectedWswAgents / numWswAgents);
+    }
+    if (singleStats) {
+      unsigned single = 0;
+      for (auto& a: agents) if (a->partner == NULL) ++single;
+      csvout("ANALYSIS", "SINGLES", single);
     }
   }
 

@@ -9,9 +9,9 @@ endif
 #  -g    adds debugging information to the executable file
 #  -Wall turns on most, but not all, compiler warnings
 DEBUGFLAGS = -DDEBUG -g
-CXXFLAGS  = -Wall -Wextra -pedantic -std=c++11 -pthread
-RELFLAGS = -O3
 EXTRAFLAGS =
+CXXFLAGS  = -Wall -Wextra -pedantic -std=c++11 -pthread $(EXTRAFLAGS)
+RELFLAGS = -O3
 
 OBJDIR = bin/
 SRCDIR = src/
@@ -29,7 +29,7 @@ TARGET = $(OBJDIR)$(TARGET_NAME)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(DEBUGFLAGS) $(CXXFLAGS) $(EXTRAFLAGS) -o $(TARGET) $(OBJS)
+	$(CXX) $(DEBUGFLAGS) $(CXXFLAGS) -o $(TARGET) $(OBJS)
 
 $(OBJDIR)main.o: $(SRCDIR)main.cc $(SRCDIR)simulate.hh
 	$(CXX) $(DEBUGFLAGS) $(CXXFLAGS) -c $(SRCDIR)main.cc -o $@
