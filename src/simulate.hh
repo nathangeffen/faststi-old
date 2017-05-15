@@ -152,8 +152,9 @@ public:
   unsigned minAge;
   unsigned maxAge;
 
-  DblMatrix weibullSinglePeriodInitial;
-  DblMatrix weibullSinglePeriodDuring;
+  DblMatrix weibullSinglePeriodFirstTime;
+  DblMatrix weibullSinglePeriodSubsequentTimes;
+  DblMatrix probVirgin;
   DblMatrix shapeRelationshipPeriod;
   DblMatrix scaleRelationshipPeriod;
   DblMatrix mswAgeDist;
@@ -295,12 +296,13 @@ public:
     probZeroSinglePeriod = matrixFromCSV("PROB_ZERO_DAYS_SINGLE_CSV", ",", true);
 
     // Weibull parameters per age for setting single period
-    weibullSinglePeriodInitial =
+    weibullSinglePeriodFirstTime =
       matrixFromCSV("WEIBULL_SINGLE_INITIAL_CSV", ",", true);
 
-    weibullSinglePeriodDuring =
+    weibullSinglePeriodSubsequentTimes =
       matrixFromCSV("WEIBULL_SINGLE_DURING_CSV", ",", true);
 
+    probVirgin =  matrixFromCSV("PROB_VIRGIN_CSV", ",", true);
 
     // Weibull parameters per age for setting relationship length
     shapeRelationshipPeriod = matrixFromCSV("SHAPE_REL_CSV", ",", true);
@@ -681,21 +683,25 @@ public:
 
         makePartner(agent, partner, distance(agent, partner));
         // Correct relationship time because this is in the middle of relationship
-        std::uniform_real_distribution<double>
-          uni2(currentDate, agent->relationshipChangeDate);
-        agent->relationshipChangeDate = uni2(rng);
-        partner->relationshipChangeDate = agent->relationshipChangeDate;
+
+        //std::uniform_real_distribution<double>
+        //  uni2(currentDate, agent->relationshipChangeDate);
+        // agent->relationshipChangeDate = uni2(rng);
+        // partner->relationshipChangeDate = agent->relationshipChangeDate;
+
         if (agent->infected == true && partner->infected == false) {
           conditionalInfectPartner(partner);
         } else if (agent->infected == false && partner->infected == true) {
           conditionalInfectPartner(agent);
         }
       } else {
-        agent->setSinglePeriod(currentDate,
-                               weibullSinglePeriodInitial,
-                               scaleSinglePeriodInitial,
-                               probZeroSinglePeriod,
-                               scaleSinglePeriodZeroDaysInitial);
+    agent->setSinglePeriod(currentDate,
+                           probVirgin,
+                           weibullSinglePeriodFirstTime,
+                           weibullSinglePeriodSubsequentTimes,
+                           scaleSinglePeriodInitial,
+                           probZeroSinglePeriod,
+                           scaleSinglePeriodZeroDaysInitial);
       }
       agents.push_back(agent);
       if (agent->partner) agents.push_back(agent->partner);

@@ -154,15 +154,19 @@ void breakupEvent(Simulation* simulation)
       agent->partner = NULL;
       partner->partner = NULL;
       agent->setSinglePeriod(simulation->currentDate,
-                             simulation->weibullSinglePeriodDuring,
+                             simulation->probVirgin,
+                             simulation->weibullSinglePeriodFirstTime,
+                             simulation->weibullSinglePeriodSubsequentTimes,
                              simulation->scaleSinglePeriodDuring,
                              simulation->probZeroSinglePeriod,
                              simulation->scaleSinglePeriodZeroDaysDuring);
       partner->setSinglePeriod(simulation->currentDate,
-                               simulation->weibullSinglePeriodDuring,
-                               simulation->scaleSinglePeriodDuring,
-                               simulation->probZeroSinglePeriod,
-                               simulation->scaleSinglePeriodZeroDaysDuring);
+                             simulation->probVirgin,
+                             simulation->weibullSinglePeriodFirstTime,
+                             simulation->weibullSinglePeriodSubsequentTimes,
+                             simulation->scaleSinglePeriodDuring,
+                             simulation->probZeroSinglePeriod,
+                             simulation->scaleSinglePeriodZeroDaysDuring);
       ++breakups;
     }
   }

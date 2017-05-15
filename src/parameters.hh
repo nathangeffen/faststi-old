@@ -306,6 +306,11 @@ public:
                  "File of scales and shapes for single period during simulation",
                  "data/SingleDuring.csv");
 
+    addParameter("PROB_VIRGIN_CSV",
+                 "File of probabilities that agent of particular age is a virgin",
+                 "data/probVirgin.csv");
+
+
     addParameter("SHAPE_REL_CSV",
                  "File of shapes for partnership", "data/Rel_shape.csv");
     addParameter("SCALE_REL_CSV",
