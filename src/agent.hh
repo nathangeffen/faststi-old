@@ -26,18 +26,20 @@ public:
 
   double singlePeriodDeviation;
   double relationshipPeriodDeviation;
+  double casualSexDeviation;
   double relationshipChangeDate = 0.0;
   double age;
-  double desired_age;
+  double desiredAge;
   double weight; // Used by some pair-matching algorithms
 
   unsigned short sex;
-  unsigned short sexual_orientation;
+  unsigned short sexualOrientation;
   bool infected;
-  bool initial_relationship;
+  bool virgin = false;
+  bool casualSex = false;
 
-  unsigned num_partners = 0;
-  unsigned num_infected = 0;
+  unsigned numPartners = 0;
+  unsigned numInfected = 0;
 
 
   /**
@@ -56,37 +58,53 @@ public:
                              const DblMatrix& scaleRelationshipPeriod,
                              const double scaleModifierRelationshipPeriod)
   {
+#ifdef LOGGING
+    double shape = 0.0, scale = 0.0;
+    size_t index1 = 0, index2 = 0;
+#else
     double shape, scale;
     size_t index1, index2;
+#endif
 
-    if (sex == MALE) {
-      index1 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_CSV);
-      index2 = std::min( (unsigned) partner->age - MIN_AGE,
-                         (unsigned) MAX_AGE_CSV);
+    if (casualSex == true || partner->casualSex == true) {
+      relationshipChangeDate = currentDate;
+      partner->relationshipChangeDate = currentDate;
     } else {
-      index2 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_CSV);
-      index1 = std::min( (unsigned) partner->age - MIN_AGE,
-                         (unsigned) MAX_AGE_CSV);
+      if (sex == MALE) {
+        index1 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_CSV);
+        index2 = std::min( (unsigned) partner->age - MIN_AGE,
+                           (unsigned) MAX_AGE_CSV);
+      } else {
+        index2 = std::min( (unsigned) age - MIN_AGE, (unsigned) MAX_AGE_CSV);
+        index1 = std::min( (unsigned) partner->age - MIN_AGE,
+                           (unsigned) MAX_AGE_CSV);
+      }
+
+      shape = shapeRelationshipPeriod[ index1 ] [ index2 ];
+      scale = scaleRelationshipPeriod[ index1 ] [ index2 ];
+      std::weibull_distribution<double> dist(shape, scale);
+      double deviation = (relationshipPeriodDeviation +
+                          partner->relationshipPeriodDeviation) / 2.0;
+      double relationshipLength = dist(rng) * scaleModifierRelationshipPeriod * deviation;
+      relationshipChangeDate = std::max(currentDate, currentDate + relationshipLength);
+      partner->relationshipChangeDate = relationshipChangeDate;
+      virgin = false;
+      partner->virgin = false;
     }
 
-    shape = shapeRelationshipPeriod[ index1 ] [ index2 ];
-    scale = scaleRelationshipPeriod[ index1 ] [ index2 ];
-    scale += relationshipPeriodDeviation + partner->relationshipPeriodDeviation;
-    // scale *= scaleModifierRelationshipPeriod;
-    std::weibull_distribution<double> dist(shape, std::max(scale, EPSILON) );
-    double relationshipLength = dist(rng) * scaleModifierRelationshipPeriod;
-    relationshipChangeDate = std::max(currentDate,
-                                      currentDate + relationshipLength);
-    partner->relationshipChangeDate = relationshipChangeDate;
-
 #ifdef LOGGING
-      std::ostringstream stream;
-      stream << "LOGAGENTREL," << id << "," << age << ","
-             << sex << "," << sexual_orientation
-             << "," << partner->id << "," << index1 << "," << index2 << ","
-             << shape << "," << scale  << ","
-             << currentDate << "," << relationshipChangeDate << std::endl;
-      std::cout << stream.str();
+    std::ostringstream stream;
+    stream << "LOGAGENTREL," << id << "," << age << ","
+           << sex << "," << sexualOrientation
+           << "," << partner->id << "," << index1 << "," << index2 << ","
+           << shape << "," << scale  << ","
+           << currentDate << "," << relationshipChangeDate << std::endl;
+    stream << "LOGAGENTREL," << partner->id << "," << partner->age << ","
+           << partner->sex << "," << partner->sexualOrientation
+           << "," << id << "," << index1 << "," << index2 << ","
+           << shape << "," << scale  << ","
+           << currentDate << "," << relationshipChangeDate << std::endl;
+    std::cout << stream.str();
 #endif
 
   }
@@ -107,35 +125,29 @@ public:
    */
 
   void setSinglePeriod(const double currentDate,
-                       const DblMatrix& probVirgin,
                        const DblMatrix& weibullSinglePeriodFirstTime,
+                       const double& scaleVirginPeriod,
                        const DblMatrix& weibullSinglePeriodSubsequentTimes,
-                       const double scaleModifierSinglePeriod,
+                       const double scaleSinglePeriod,
                        const DblMatrix& probZeroSinglePeriod,
                        const double probZeroSinglePeriodScale)
   {
-    unsigned index1, index2;
-    bool virgin = false;
+    unsigned index1;
     double shape = 0.0, scale = 0.0;
     std::uniform_real_distribution<double> uni;
 
-    // First process agents who've not had sex
+    // Process virgins first
     if (relationshipChangeDate == 0.0) {
-      index1 = std::min( (size_t) age - MIN_AGE, probVirgin.size() - 1);
-      if (sex == MALE) {
-        index2 = 1;
-      } else {
-        index2 = 2;
-      }
-      if (uni(rng) < probVirgin[index1][index2]) {
+      index1 = std::min( (size_t) age - MIN_AGE,
+                         (size_t) weibullSinglePeriodFirstTime.size() - 1);
+      shape = weibullSinglePeriodFirstTime[index1][sex * 2];
+      scale = weibullSinglePeriodFirstTime[index1][sex * 2 + 1];
+      std::weibull_distribution<double> dist(shape, scale);
+      double ageFirstSex  = dist(rng) * scaleVirginPeriod;
+      if (ageFirstSex > age) {
         virgin = true;
-        index1 = std::min( index1, (unsigned) weibullSinglePeriodFirstTime.size() - 1);
-        shape = weibullSinglePeriodFirstTime[index1][sex * 2];
-        scale = weibullSinglePeriodFirstTime[index1][sex * 2 + 1];
-        std::weibull_distribution<double> dist(shape, std::max(scale, EPSILON));
-        double ageFirstSex  = dist(rng);
         double timeFirstSex = ageFirstSex - age;
-        relationshipChangeDate = std::max(currentDate, currentDate + timeFirstSex);
+        relationshipChangeDate = currentDate + timeFirstSex;
       }
     }
 
@@ -143,26 +155,23 @@ public:
     if (virgin == false) {
       index1 = std::min( (unsigned) age - MIN_AGE,
                          (unsigned) MAX_AGE_CSV);
-
+      // Go immediately into a new relationship
       double prob = probZeroSinglePeriod[index1][sex] * probZeroSinglePeriodScale;
       if (uni(rng) < prob) {
         relationshipChangeDate = currentDate;
       } else {
         shape = weibullSinglePeriodSubsequentTimes[index1][sex * 2];
-        scale = weibullSinglePeriodSubsequentTimes[index1][sex * 2 + 1]
-          + singlePeriodDeviation;
-        // scale *= scaleModifierSinglePeriod;
-        std::weibull_distribution<double> dist(shape, std::max(scale, EPSILON));
-        double timeSingle  = dist(rng) * scaleModifierSinglePeriod;
-        relationshipChangeDate = std::max(currentDate,
-                                          currentDate + timeSingle);
+        scale = weibullSinglePeriodSubsequentTimes[index1][sex * 2 + 1];
+        std::weibull_distribution<double> dist(shape, scale);
+        double timeSingle  = dist(rng) * scaleSinglePeriod * singlePeriodDeviation;
+        relationshipChangeDate = currentDate + timeSingle;
       }
     }
 #ifdef LOGGING
     std::ostringstream stream;
     stream << "LOGAGENTSIN," << id << "," << age
-           << "," << sex << "," << sexual_orientation
-           << "," << 0 << "," << index1 << "," << index2 << ","
+           << "," << sex << "," << sexualOrientation
+           << "," << 0 << "," << index1 << ","
            << shape << "," << scale  << ","
            << currentDate << "," << relationshipChangeDate << std::endl;
     std::cout << stream.str();
@@ -175,14 +184,26 @@ public:
      @param currentDate[in] Current date of the simulation.
    */
 
-  bool isMatchable(const double currentDate) const
+  bool isMatchable(const double currentDate, const DblMatrix& probCasualSex)
   {
-    if (partner == NULL && (currentDate + DAY / 2.0) >= relationshipChangeDate)
-      return true;
-    else
-      return false;
+    if (partner == NULL) {
+      if ( (currentDate + DAY / 2.0) >= relationshipChangeDate) {
+        casualSex = false;
+        return true;
+      } else {
+        if (virgin == false) {
+          std::uniform_real_distribution<double> uni(0.0, 1.0);
+          size_t index = std::min( (size_t) age - MIN_AGE,
+                                     (size_t) probCasualSex.size() - 1);
+          if (uni(rng) < (probCasualSex[index][1] * casualSexDeviation)) {
+            casualSex = true;
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
-
 };
 
 typedef std::vector<Agent *> AgentVector;

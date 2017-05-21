@@ -78,13 +78,13 @@ void setInitialInfection(Agent &agent,
                          const std::vector<double>& initialInfectionRatesWSW)
 {
   std::uniform_real_distribution<double> uni;
-  if (agent.sex == MALE && agent.sexual_orientation == HETEROSEXUAL) {
+  if (agent.sex == MALE && agent.sexualOrientation == HETEROSEXUAL) {
     agent.infected = (uni(rng) < initialInfectionRatesMSW[(int) agent.age])
       ? true : false;
-  } else if (agent.sex == MALE && agent.sexual_orientation == HOMOSEXUAL) {
+  } else if (agent.sex == MALE && agent.sexualOrientation == HOMOSEXUAL) {
     agent.infected = (uni(rng) < initialInfectionRatesMSM[(int) agent.age])
       ? true : false;
-  } else if (agent.sex == FEMALE && agent.sexual_orientation == HETEROSEXUAL) {
+  } else if (agent.sex == FEMALE && agent.sexualOrientation == HETEROSEXUAL) {
     agent.infected = (uni(rng) < initialInfectionRatesWSM[(int) agent.age])
       ? true : false;
   } else {
@@ -129,7 +129,7 @@ void infectEvent(Simulation* simulation)
       if (dist(rng) < risk_infection) {
         agent->infected = true;
         agent->infector = agent->partner;
-        ++agent->partner->num_infected;
+        ++agent->partner->numInfected;
         simulation->trackRiskFactors(agent);
       }
     }
@@ -148,25 +148,24 @@ void breakupEvent(Simulation* simulation)
   for (auto& agent: simulation->agents) {
     //  if (breakups >= maxBreakups) break;
     if (agent->partner &&
-        ( (simulation->currentDate + 0.5) >
-          agent->relationshipChangeDate) ) {
+        ( (simulation->currentDate + DAY / 2.0) > agent->relationshipChangeDate) ) {
       Agent* partner = agent->partner;
       agent->partner = NULL;
       partner->partner = NULL;
       agent->setSinglePeriod(simulation->currentDate,
-                             simulation->probVirgin,
                              simulation->weibullSinglePeriodFirstTime,
+                             simulation->scaleVirginPeriod,
                              simulation->weibullSinglePeriodSubsequentTimes,
-                             simulation->scaleSinglePeriodDuring,
+                             simulation->scaleSinglePeriod,
                              simulation->probZeroSinglePeriod,
                              simulation->scaleSinglePeriodZeroDaysDuring);
       partner->setSinglePeriod(simulation->currentDate,
-                             simulation->probVirgin,
-                             simulation->weibullSinglePeriodFirstTime,
-                             simulation->weibullSinglePeriodSubsequentTimes,
-                             simulation->scaleSinglePeriodDuring,
-                             simulation->probZeroSinglePeriod,
-                             simulation->scaleSinglePeriodZeroDaysDuring);
+                               simulation->weibullSinglePeriodFirstTime,
+                               simulation->scaleVirginPeriod,
+                               simulation->weibullSinglePeriodSubsequentTimes,
+                               simulation->scaleSinglePeriod,
+                               simulation->probZeroSinglePeriod,
+                               simulation->scaleSinglePeriodZeroDaysDuring);
       ++breakups;
     }
   }
@@ -478,40 +477,40 @@ void runTests(ParameterMap& parameterMap)
 
   simulation.agents[0]->age = 20;
   simulation.agents[0]->sex = MALE;
-  simulation.agents[0]->desired_age = 50;
-  simulation.agents[0]->sexual_orientation = HETEROSEXUAL;
+  simulation.agents[0]->desiredAge = 50;
+  simulation.agents[0]->sexualOrientation = HETEROSEXUAL;
 
   simulation.agents[1]->age = 30;
   simulation.agents[1]->sex = MALE;
-  simulation.agents[1]->desired_age = 25;
-  simulation.agents[1]->sexual_orientation = HOMOSEXUAL;
+  simulation.agents[1]->desiredAge = 25;
+  simulation.agents[1]->sexualOrientation = HOMOSEXUAL;
 
   simulation.agents[2]->age = 40;
   simulation.agents[2]->sex = FEMALE;
-  simulation.agents[2]->desired_age = 30;
-  simulation.agents[2]->sexual_orientation = HETEROSEXUAL;
+  simulation.agents[2]->desiredAge = 30;
+  simulation.agents[2]->sexualOrientation = HETEROSEXUAL;
 
   simulation.agents[3]->age = 25;
   simulation.agents[3]->sex = FEMALE;
-  simulation.agents[3]->desired_age = 25;
+  simulation.agents[3]->desiredAge = 25;
   // simulation.agents[3]->relationship_length_factor = 0;
-  simulation.agents[3]->sexual_orientation = HOMOSEXUAL;
+  simulation.agents[3]->sexualOrientation = HOMOSEXUAL;
 
   simulation.agents[4]->age = 30;
   simulation.agents[4]->sex = FEMALE;
-  simulation.agents[4]->desired_age = 20;
-  simulation.agents[4]->sexual_orientation = HOMOSEXUAL;
+  simulation.agents[4]->desiredAge = 20;
+  simulation.agents[4]->sexualOrientation = HOMOSEXUAL;
 
   simulation.agents[5]->age = 30;
   simulation.agents[5]->sex = MALE;
-  simulation.agents[5]->desired_age = 20;
-  simulation.agents[5]->sexual_orientation = HOMOSEXUAL;
+  simulation.agents[5]->desiredAge = 20;
+  simulation.agents[5]->sexualOrientation = HOMOSEXUAL;
 
   simulation.agents[6]->age = 25;
   simulation.agents[6]->sex = MALE;
-  simulation.agents[6]->desired_age = 25;
+  simulation.agents[6]->desiredAge = 25;
   // simulation.agents[6]->relationship_length_factor = 0;
-  simulation.agents[6]->sexual_orientation = HETEROSEXUAL;
+  simulation.agents[6]->sexualOrientation = HETEROSEXUAL;
 
 
   double d1 = simulation.heuristicDistance(simulation.agents[0],

@@ -33,17 +33,17 @@ std::ostream& operator<<(std::ostream& os, const Agent& agent)
   std::ostringstream stream;
   stream << "ID," << agent.id << ",Age," << agent.age
          << ",Sex," << (agent.sex == MALE ? "M" : "F")
-         << ",Orientation," << (agent.sexual_orientation == HETEROSEXUAL
+         << ",Orientation," << (agent.sexualOrientation == HETEROSEXUAL
                                 ? "S" : "G")
-         << ",Desired," << agent.desired_age;
+         << ",Desired," << agent.desiredAge;
 
   if (agent.partner) {
     auto &p = agent.partner;
     stream << ",ID," << p->id << ",Age," << p->age
            << ",Sex," << (p->sex == MALE ? "M" : "F")
-           << ",Orientation," << (p->sexual_orientation == HETEROSEXUAL
+           << ",Orientation," << (p->sexualOrientation == HETEROSEXUAL
                                   ? "S" : "G")
-           << ",Desired," << p->desired_age;
+           << ",Desired," << p->desiredAge;
   } else {
     stream << ",,,,,,,,,,";
   }

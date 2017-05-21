@@ -1,0 +1,19 @@
+inp = read.csv("tmp1.csv", TRUE)
+singles = inp[inp$Desc2=="SINGLES",]
+singles$Date = as.double(singles$Date)
+singles$Value = as.double(singles$Value)
+lm(singles$Value~singles$Date)
+matings = inp[inp$Desc1=="MATINGPOOL",]
+matings$Date = as.double(matings$Date)
+matings$Value = as.double(matings$Value)
+breakups = inp[inp$Desc1=="BREAKUPS",]
+breakups$Date = as.double(breakups$Date)
+breakups$Value = as.double(breakups$Value)
+lm(matings$Value~matings$Date)
+lm(breakups$Value~breakups$Date)
+args = commandArgs(trailingOnly=TRUE)
+pdf(paste(args[1], ".pdf", sep=""),onefile=TRUE)
+plot(singles$Date,singles$Value, type="l",col="red")
+plot(matings$Date, matings$Value, type="l", col="blue")
+plot(breakups$Date, breakups$Value, type="l", col="green")
+dev.off()

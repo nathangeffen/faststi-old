@@ -193,7 +193,7 @@ public:
                  {2000.00});
     addParameter("MATCH_SCORE_POOR",
                  "Score for which a poor match must be registered",
-                 {49.50});
+                 {40.0});
 
     addParameter("OUTPUT_AGENTS_INIT",
                  "Print agent info after initialization"
@@ -310,6 +310,9 @@ public:
                  "File of probabilities that agent of particular age is a virgin",
                  "data/probVirgin.csv");
 
+    addParameter("PROB_CASUAL_SEX_CSV",
+                 "File of probabilities that single agent has 'one night stand'",
+                 "data/ONSProbSimple.csv");
 
     addParameter("SHAPE_REL_CSV",
                  "File of shapes for partnership", "data/Rel_shape.csv");
@@ -330,32 +333,35 @@ public:
 
     addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL",
                  "Factor < 1.0 to multiple probability of being single "
-                 "for zero days at initiatilization", {0.0});
-
+                 "for zero days at initialization", {0.0});
     addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING",
                  "Factor < 1.0 to multiple probability of being single "
                  "for zero days during simulation", {1.0});
 
-    addParameter("SCALE_SINGLE_PERIOD_INITIAL",
+    addParameter("SCALE_VIRGIN_PERIOD",
                  "Multiply Weibull initial single period scale parameters "
                  "by this", {1.0});
-    addParameter("SCALE_SINGLE_PERIOD_DURING",
+    addParameter("SCALE_SINGLE_PERIOD",
                  "Multiply Weibull during simulation single period  scale "
                  "parameters by this", {1.0});
-
     addParameter("MEAN_SINGLE_PERIOD",
-                 "Mean difference from expected single period", {0});
+                 "Mean difference from expected single period", {1.0});
     addParameter("SD_SINGLE_PERIOD",
-                 "Standard deviation of single period", {3.0});
+                 "Standard deviation of single period", {0.0});
 
     addParameter("SCALE_RELATIONSHIP_PERIOD_INITIAL",
-                 "Multiply relationship scale parameters by this", {1.0 / 3.0});
+                 "Multiply relationship scale parameters by this", {1.0});
     addParameter("SCALE_RELATIONSHIP_PERIOD_DURING",
                  "Multiply relationship scale parameters by this", {1.0});
     addParameter("MEAN_RELATIONSHIP_PERIOD",
-                 "Mean difference from expected relationship period.", {0});
+                 "Mean difference from expected relationship period.", {1.0});
     addParameter("SD_RELATIONSHIP_PERIOD",
-                 "Standard deviation of relationship period.", {3.0});
+                 "Standard deviation of relationship period.", {0.0});
+
+    addParameter("MEAN_CASUAL_SEX",
+                 "Mean factored difference from likelihood of casual sex", {1.0});
+    addParameter("SD_CASUAL_SEX",
+                 "Standard deviation from likelihood of casual sex", {0.0});
 
     // DEBUGGING - IGNORED IN RELEASE MODE
 

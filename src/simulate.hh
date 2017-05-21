@@ -85,11 +85,14 @@ public:
 
   double scaleSinglePeriodZeroDaysInitial;
   double scaleSinglePeriodZeroDaysDuring;
-  double scaleSinglePeriodInitial;
-  double scaleSinglePeriodDuring;
+  double scaleVirginPeriod;
+  double scaleSinglePeriod;
 
   double meanSinglePeriodDeviation;
   double sdSinglePeriodDeviation;
+
+  double meanCasualSexDeviation;
+  double sdCasualSexDeviation;
 
   double scaleModifierRelationshipPeriod;
   double meanRelationshipPeriodDeviation;
@@ -151,10 +154,12 @@ public:
   unsigned failedMatches = 0;
   unsigned minAge;
   unsigned maxAge;
+  unsigned casualSexEncounters = 0;
 
   DblMatrix weibullSinglePeriodFirstTime;
   DblMatrix weibullSinglePeriodSubsequentTimes;
   DblMatrix probVirgin;
+  DblMatrix probCasualSex;
   DblMatrix shapeRelationshipPeriod;
   DblMatrix scaleRelationshipPeriod;
   DblMatrix mswAgeDist;
@@ -237,15 +242,19 @@ public:
       parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL").dbl();
     scaleSinglePeriodZeroDaysDuring =
       parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING").dbl();
-    scaleSinglePeriodInitial =
-      parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL").dbl();
-    scaleSinglePeriodDuring =
-      parameterMap.at("SCALE_SINGLE_PERIOD_DURING").dbl();
+
+    scaleVirginPeriod = parameterMap.at("SCALE_VIRGIN_PERIOD").dbl();
+    scaleSinglePeriod = parameterMap.at("SCALE_SINGLE_PERIOD").dbl();
 
     meanSinglePeriodDeviation =
       parameterMap.at("MEAN_SINGLE_PERIOD").dbl();
     sdSinglePeriodDeviation =
       parameterMap.at("SD_SINGLE_PERIOD").dbl();
+
+    meanCasualSexDeviation =
+      parameterMap.at("MEAN_CASUAL_SEX").dbl();
+    sdCasualSexDeviation =
+      parameterMap.at("SD_CASUAL_SEX").dbl();
 
     // Relationship period parameters
     meanRelationshipPeriodDeviation =
@@ -303,6 +312,7 @@ public:
       matrixFromCSV("WEIBULL_SINGLE_DURING_CSV", ",", true);
 
     probVirgin =  matrixFromCSV("PROB_VIRGIN_CSV", ",", true);
+    probCasualSex = matrixFromCSV("PROB_CASUAL_SEX_CSV", ",", true);
 
     // Weibull parameters per age for setting relationship length
     shapeRelationshipPeriod = matrixFromCSV("SHAPE_REL_CSV", ",", true);
@@ -389,7 +399,7 @@ public:
     outputAgents = parameterMap.at("OUTPUT_AGENTS_AFTER").dbl();
     if (outputAgents) printAgents(agents, simulationNum, endDate);
     if ( (unsigned) parameterMap.at("ANALYZE_AFTER").isSet()) {
-      analysis(true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter);
+      analysis(true, true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter);
     }
   }
 
@@ -541,36 +551,39 @@ public:
     // Sex
     unsigned sex = uni(rng) < femRatio[age - 12] ? FEMALE : MALE;
     agent->sex = sex;
-    // Sexual_Orientation
-    unsigned sexual_orientation;
+    // SexualOrientation
+    unsigned sexualOrientation;
     if (sex == FEMALE) {
-      sexual_orientation = uni(rng) < wswRate[age - 12]
+      sexualOrientation = uni(rng) < wswRate[age - 12]
                                       ? HOMOSEXUAL : HETEROSEXUAL;
     } else {
-      sexual_orientation = uni(rng) < msmRate[age - 12]
+      sexualOrientation = uni(rng) < msmRate[age - 12]
                                       ? HOMOSEXUAL : HETEROSEXUAL;
     }
-    agent->sexual_orientation = sexual_orientation;
+    agent->sexualOrientation = sexualOrientation;
     setInitialInfection(*agent, initialInfectionRatesMSW,
                         initialInfectionRatesMSM, initialInfectionRatesWSM,
                         initialInfectionRatesWSW);
     // Desired age of partner
-    if (sex == FEMALE && sexual_orientation == HOMOSEXUAL)
-      agent->desired_age  = sample_matWW[age - 12]() + 12;
-    else if (sex == FEMALE && sexual_orientation == HETEROSEXUAL)
-      agent->desired_age = sample_matWM[age - 12]() + 12;
-    else if (sex == MALE && sexual_orientation == HETEROSEXUAL)
-      agent->desired_age = sample_matMW[age - 12]() + 12;
+    if (sex == FEMALE && sexualOrientation == HOMOSEXUAL)
+      agent->desiredAge  = sample_matWW[age - 12]() + 12;
+    else if (sex == FEMALE && sexualOrientation == HETEROSEXUAL)
+      agent->desiredAge = sample_matWM[age - 12]() + 12;
+    else if (sex == MALE && sexualOrientation == HETEROSEXUAL)
+      agent->desiredAge = sample_matMW[age - 12]() + 12;
     else
-      agent->desired_age = sample_matMM[age - 12]() + 12;
+      agent->desiredAge = sample_matMM[age - 12]() + 12;
     // Agent's deviation from mean for period spent in relationships or single
     std::normal_distribution<double>
       normSingle(meanSinglePeriodDeviation, sdSinglePeriodDeviation);
     std::normal_distribution<double>
+      normCasual(meanCasualSexDeviation, sdCasualSexDeviation);
+    std::normal_distribution<double>
       normRelationship(meanRelationshipPeriodDeviation,
                        sdRelationshipPeriodDeviation);
-    agent->singlePeriodDeviation = normSingle(rng);
-    agent->relationshipPeriodDeviation = normRelationship(rng);
+    agent->singlePeriodDeviation = std::max(normSingle(rng), 0.0);
+    agent->relationshipPeriodDeviation = std::max(normRelationship(rng), 0.0);
+    agent->casualSexDeviation = std::max(normCasual(rng), 0.0);
   }
 
 
@@ -645,7 +658,6 @@ public:
 
       if (initial_relation) {
         // Relationship
-        agent->initial_relationship = true;
         Agent* partner = new Agent();
         initAgent(partner, i + 2,
                   sample_ageshare,
@@ -661,9 +673,9 @@ public:
                   sample_matWM,
                   sample_matMM);
         // Orientation = partner's orientation
-        partner->sexual_orientation = agent->sexual_orientation;
+        partner->sexualOrientation = agent->sexualOrientation;
         // Partner sex
-        if (agent->sexual_orientation == HETEROSEXUAL) {
+        if (agent->sexualOrientation == HETEROSEXUAL) {
           if (agent->sex == MALE)
             partner->sex = FEMALE;
           else
@@ -671,11 +683,9 @@ public:
         } else {
           partner->sex = agent->sex;
         }
-        partner->age = agent->desired_age;
-        // Partner in relationship
-        partner->initial_relationship = true;
+        partner->age = agent->desiredAge;
         // Preferred age of partner
-        partner->desired_age = agent->age;
+        partner->desiredAge = agent->age;
         // partner infection risk parameters
         setInitialInfection(*partner, initialInfectionRatesMSW,
                             initialInfectionRatesMSM, initialInfectionRatesWSM,
@@ -696,10 +706,10 @@ public:
         }
       } else {
     agent->setSinglePeriod(currentDate,
-                           probVirgin,
                            weibullSinglePeriodFirstTime,
+                           scaleVirginPeriod,
                            weibullSinglePeriodSubsequentTimes,
-                           scaleSinglePeriodInitial,
+                           scaleSinglePeriod,
                            probZeroSinglePeriod,
                            scaleSinglePeriodZeroDaysInitial);
       }
@@ -717,26 +727,26 @@ public:
     for (unsigned i = 0; i < agents.size(); ++i) {
       if (agents[i]->sex == MALE) {
         ++numMales;
-        if (agents[i]->sexual_orientation == HETEROSEXUAL)
+        if (agents[i]->sexualOrientation == HETEROSEXUAL)
           ++numMsw;
         else
           ++numMsm;
         if (agents[i]->infected) {
           ++numInfectedMales;
-          if (agents[i]->sexual_orientation == HETEROSEXUAL)
+          if (agents[i]->sexualOrientation == HETEROSEXUAL)
             ++numInfectedMsw;
           else
             ++numInfectedMsm;
         }
       } else {
         ++numFemales;
-        if (agents[i]->sexual_orientation == HETEROSEXUAL)
+        if (agents[i]->sexualOrientation == HETEROSEXUAL)
           ++numWsm;
         else
           ++numWsw;
         if (agents[i]->infected) {
           ++numInfectedFemales;
-          if (agents[i]->sexual_orientation == HETEROSEXUAL)
+          if (agents[i]->sexualOrientation == HETEROSEXUAL)
             ++numInfectedWsm;
           else
             ++numInfectedWsw;
@@ -754,13 +764,13 @@ public:
   {
     if (agent->sex == MALE) {
       ++numInfectedMales;
-      if (agent->sexual_orientation == HETEROSEXUAL)
+      if (agent->sexualOrientation == HETEROSEXUAL)
         ++numInfectedMsw;
       else
         ++numInfectedMsm;
     } else {
       ++numInfectedFemales;
-      if (agent->sexual_orientation == HETEROSEXUAL)
+      if (agent->sexualOrientation == HETEROSEXUAL)
         ++numInfectedWsm;
       else
         ++numInfectedWsw;
@@ -772,17 +782,9 @@ public:
   */
   AgentVector getMatingPool()
   {
-    // double mean = meanRatePairsTimeStep * agents.size();
-    // double sd = sdRatePairs * mean;
-    // std::normal_distribution<double> dist(mean, sd);
-    // unsigned maxMatingAgents = 2 * (unsigned) std::max(0.0, dist(rng));
-    // std::shuffle(agents.begin(), agents.end(), rng);
-
     AgentVector matingPool;
     for (auto& agent : agents) {
-      //      if (matingPool.size() >= maxMatingAgents) break;
-      if (agent->isMatchable(currentDate))
-        matingPool.push_back(agent);
+      if (agent->isMatchable(currentDate, probCasualSex)) matingPool.push_back(agent);
     }
     if (matingPool.size() % 2 == 1) matingPool.pop_back();
     if (printNumMatings) csvout("MATINGPOOL", "", matingPool.size());
@@ -889,6 +891,7 @@ public:
       csvout("ANALYSIS", "SCORE", totalPartnershipScore / totalPartnerships);
       csvout("ANALYSIS", "FAILED", failedMatches);
       csvout("ANALYSIS", "POOR", poorMatches);
+      csvout("ANALYSIS", "CASUAL", casualSexEncounters);
     }
     if (truncatedAge) {
       unsigned numAgents = 0;
@@ -920,14 +923,14 @@ public:
           ++numAgents;
           if (a->sex == MALE) {
             ++numMaleAgents;
-            if (a->sexual_orientation == HETEROSEXUAL) {
+            if (a->sexualOrientation == HETEROSEXUAL) {
               ++numMswAgents;
             } else {
               ++numMsmAgents;
             }
           } else {
             ++numFemaleAgents;
-            if (a->sexual_orientation == HETEROSEXUAL) {
+            if (a->sexualOrientation == HETEROSEXUAL) {
               ++numWsmAgents;
             } else {
               ++numWswAgents;
@@ -937,14 +940,14 @@ public:
             ++numInfectedAgents;
             if (a->sex == MALE) {
               ++numInfectedMaleAgents;
-              if (a->sexual_orientation == HETEROSEXUAL) {
+              if (a->sexualOrientation == HETEROSEXUAL) {
                 ++numInfectedMswAgents;
               } else {
                 ++numInfectedMsmAgents;
               }
             } else {
               ++numInfectedFemaleAgents;
-              if (a->sexual_orientation == HETEROSEXUAL) {
+              if (a->sexualOrientation == HETEROSEXUAL) {
                 ++numInfectedWsmAgents;
               } else {
                 ++numInfectedWswAgents;
@@ -1091,8 +1094,9 @@ public:
       a->setRelationshipPeriod(currentDate, shapeRelationshipPeriod,
                                scaleRelationshipPeriod,
                                scaleModifierRelationshipPeriod);
-      ++a->num_partners;
-      ++b->num_partners;
+      if (a->relationshipChangeDate == currentDate) ++casualSexEncounters;
+      ++a->numPartners;
+      ++b->numPartners;
       ++totalPartnerships;
       if (a->sex == b->sex) {
         if (a->sex == MALE)
@@ -1132,18 +1136,19 @@ public:
   {
     double score = 0.0;
 
-    score +=  (fabs(a->desired_age - b->age) +
-               fabs(b->desired_age - a->age)) / 2.0;
-    if (a->sexual_orientation != b->sexual_orientation) {
+    score +=  (fabs(a->desiredAge - b->age) +
+               fabs(b->desiredAge - a->age)) / 2.0;
+    if (a->sexualOrientation != b->sexualOrientation) {
       score += 50.0;
-    } else if (a->sexual_orientation == HETEROSEXUAL) {
+    } else if (a->sexualOrientation == HETEROSEXUAL) {
       if (a->sex == b->sex)
         score += 50.0;
     } else if (a->sex != b->sex) {
       score += 50.0;
     }
-    if (partnerships.exists(a->id, b->id))
-      score += 50.0;
+    if (partnerships.exists(a->id, b->id)) score += 50.0;
+    if (a->casualSex != b->casualSex) score += 40.0;
+
     return score;
   }
 
@@ -1174,9 +1179,9 @@ public:
       throw std::runtime_error("Unknown sex combination");
     }
 
-    if (a->sexual_orientation != b->sexual_orientation) {
+    if (a->sexualOrientation != b->sexualOrientation) {
       score += 50.0;
-    } else if (a->sexual_orientation == HETEROSEXUAL) {
+    } else if (a->sexualOrientation == HETEROSEXUAL) {
       if (a->sex == b->sex)
         score += 50.0;
     } else if (a->sex != b->sex) {
@@ -1185,6 +1190,7 @@ public:
 
     if (partnerships.exists(a->id, b->id))
       score += 50.0;
+    if (a->casualSex != b->casualSex) score += 40.0;
 
     return score;
   }
@@ -1197,8 +1203,8 @@ public:
    */
   double clusterValue(const Agent *a) const
   {
-    return ( (double) a->desired_age / 100.0 + a->age / 100.0) / 2.0
-      + a->sexual_orientation;
+    return ( (double) a->desiredAge / 100.0 + a->age / 100.0) / 2.0
+      +  a->casualSex * 4 + a->sexualOrientation * 8;
   }
 
   virtual void setEvents();
