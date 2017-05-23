@@ -156,14 +156,14 @@ void breakupEvent(Simulation* simulation)
                              simulation->weibullSinglePeriodFirstTime,
                              simulation->scaleVirginPeriod,
                              simulation->weibullSinglePeriodSubsequentTimes,
-                             simulation->scaleSinglePeriod,
+                             simulation->scaleSinglePeriodDuring,
                              simulation->probZeroSinglePeriod,
                              simulation->scaleSinglePeriodZeroDaysDuring);
       partner->setSinglePeriod(simulation->currentDate,
                                simulation->weibullSinglePeriodFirstTime,
                                simulation->scaleVirginPeriod,
                                simulation->weibullSinglePeriodSubsequentTimes,
-                               simulation->scaleSinglePeriod,
+                               simulation->scaleSinglePeriodDuring,
                                simulation->probZeroSinglePeriod,
                                simulation->scaleSinglePeriodZeroDaysDuring);
       ++breakups;

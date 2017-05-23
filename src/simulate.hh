@@ -86,7 +86,8 @@ public:
   double scaleSinglePeriodZeroDaysInitial;
   double scaleSinglePeriodZeroDaysDuring;
   double scaleVirginPeriod;
-  double scaleSinglePeriod;
+  double scaleSinglePeriodInitial;
+  double scaleSinglePeriodDuring;
 
   double meanSinglePeriodDeviation;
   double sdSinglePeriodDeviation;
@@ -244,7 +245,8 @@ public:
       parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING").dbl();
 
     scaleVirginPeriod = parameterMap.at("SCALE_VIRGIN_PERIOD").dbl();
-    scaleSinglePeriod = parameterMap.at("SCALE_SINGLE_PERIOD").dbl();
+    scaleSinglePeriodInitial = parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL").dbl();
+    scaleSinglePeriodDuring = parameterMap.at("SCALE_SINGLE_PERIOD_DURING").dbl();
 
     meanSinglePeriodDeviation =
       parameterMap.at("MEAN_SINGLE_PERIOD").dbl();
@@ -296,12 +298,6 @@ public:
     wswAgeDist = matrixFromCSV("WSW_AGE_DIST_CSV", ",", true);
     mswAgeDist = matrixFromCSV("MSW_AGE_DIST_CSV", ",", true);
     wsmAgeDist = matrixFromCSV("WSM_AGE_DIST_CSV", ",", true);
-    // size_t n = maxAge - MIN_AGE;
-    // truncateMatrix(msmAgeDist, n, n);
-    // truncateMatrix(wswAgeDist, n, n);
-    // truncateMatrix(mswAgeDist, n, n);
-    // truncateMatrix(wsmAgeDist, n, n);
-    // Probability single period is zero
     probZeroSinglePeriod = matrixFromCSV("PROB_ZERO_DAYS_SINGLE_CSV", ",", true);
 
     // Weibull parameters per age for setting single period
@@ -709,7 +705,7 @@ public:
                            weibullSinglePeriodFirstTime,
                            scaleVirginPeriod,
                            weibullSinglePeriodSubsequentTimes,
-                           scaleSinglePeriod,
+                           scaleSinglePeriodInitial,
                            probZeroSinglePeriod,
                            scaleSinglePeriodZeroDaysInitial);
       }

@@ -341,9 +341,10 @@ public:
     addParameter("SCALE_VIRGIN_PERIOD",
                  "Multiply Weibull initial single period scale parameters "
                  "by this", {1.0});
-    addParameter("SCALE_SINGLE_PERIOD",
-                 "Multiply Weibull during simulation single period  scale "
-                 "parameters by this", {1.0});
+    addParameter("SCALE_SINGLE_PERIOD_INITIAL",
+                 "Multiply single period by this during initialization", {1.0});
+    addParameter("SCALE_SINGLE_PERIOD_DURING",
+                 "Multiply single period by this during simulation", {1.0});
     addParameter("MEAN_SINGLE_PERIOD",
                  "Mean difference from expected single period", {1.0});
     addParameter("SD_SINGLE_PERIOD",
