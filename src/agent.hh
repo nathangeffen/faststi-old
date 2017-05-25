@@ -24,9 +24,9 @@ public:
   Agent* partner;
   Agent* infector = NULL;
 
-  double singlePeriodDeviation;
-  double relationshipPeriodDeviation;
-  double casualSexDeviation;
+  double singlePeriodFactor;
+  double relationshipPeriodFactor;
+  double casualSexFactor;
   double relationshipChangeDate = 0.0;
   double age;
   double desiredAge;
@@ -83,8 +83,8 @@ public:
       shape = shapeRelationshipPeriod[ index1 ] [ index2 ];
       scale = scaleRelationshipPeriod[ index1 ] [ index2 ];
       std::weibull_distribution<double> dist(shape, scale);
-      double deviation = (relationshipPeriodDeviation +
-                          partner->relationshipPeriodDeviation) / 2.0;
+      double deviation = (relationshipPeriodFactor +
+                          partner->relationshipPeriodFactor) / 2.0;
       double relationshipLength = dist(rng) * scaleModifierRelationshipPeriod * deviation;
       relationshipChangeDate = std::max(currentDate, currentDate + relationshipLength);
       partner->relationshipChangeDate = relationshipChangeDate;
@@ -163,7 +163,7 @@ public:
         shape = weibullSinglePeriodSubsequentTimes[index1][sex * 2];
         scale = weibullSinglePeriodSubsequentTimes[index1][sex * 2 + 1];
         std::weibull_distribution<double> dist(shape, scale);
-        double timeSingle  = dist(rng) * scaleSinglePeriod * singlePeriodDeviation;
+        double timeSingle  = dist(rng) * scaleSinglePeriod * singlePeriodFactor;
         relationshipChangeDate = currentDate + timeSingle;
       }
     }
@@ -194,8 +194,8 @@ public:
         if (virgin == false) {
           std::uniform_real_distribution<double> uni(0.0, 1.0);
           size_t index = std::min( (size_t) age - MIN_AGE,
-                                     (size_t) probCasualSex.size() - 1);
-          if (uni(rng) < (probCasualSex[index][1] * casualSexDeviation)) {
+                                   (size_t) probCasualSex.size() - 1);
+          if (uni(rng) < (probCasualSex[index][1] * casualSexFactor)) {
             casualSex = true;
             return true;
           }

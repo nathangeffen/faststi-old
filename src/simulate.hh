@@ -89,15 +89,15 @@ public:
   double scaleSinglePeriodInitial;
   double scaleSinglePeriodDuring;
 
-  double meanSinglePeriodDeviation;
-  double sdSinglePeriodDeviation;
+  double meanSinglePeriodFactor;
+  double sdSinglePeriodFactor;
 
-  double meanCasualSexDeviation;
-  double sdCasualSexDeviation;
+  double meanCasualSexFactor;
+  double sdCasualSexFactor;
 
   double scaleModifierRelationshipPeriod;
-  double meanRelationshipPeriodDeviation;
-  double sdRelationshipPeriodDeviation;
+  double meanRelationshipPeriodFactor;
+  double sdRelationshipPeriodFactor;
 
   double hetMaleInfectiousness;
   double homMaleInfectiousness;
@@ -168,6 +168,8 @@ public:
   DblMatrix msmAgeDist;
   DblMatrix wswAgeDist;
   DblMatrix probZeroSinglePeriod;
+
+  AgentVector matingPool;
 
   std::vector< std::function<void(Simulation*)> > events;
 
@@ -248,20 +250,20 @@ public:
     scaleSinglePeriodInitial = parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL").dbl();
     scaleSinglePeriodDuring = parameterMap.at("SCALE_SINGLE_PERIOD_DURING").dbl();
 
-    meanSinglePeriodDeviation =
+    meanSinglePeriodFactor =
       parameterMap.at("MEAN_SINGLE_PERIOD").dbl();
-    sdSinglePeriodDeviation =
+    sdSinglePeriodFactor =
       parameterMap.at("SD_SINGLE_PERIOD").dbl();
 
-    meanCasualSexDeviation =
+    meanCasualSexFactor =
       parameterMap.at("MEAN_CASUAL_SEX").dbl();
-    sdCasualSexDeviation =
+    sdCasualSexFactor =
       parameterMap.at("SD_CASUAL_SEX").dbl();
 
     // Relationship period parameters
-    meanRelationshipPeriodDeviation =
+    meanRelationshipPeriodFactor =
       parameterMap.at("MEAN_RELATIONSHIP_PERIOD").dbl();
-    sdRelationshipPeriodDeviation =
+    sdRelationshipPeriodFactor =
       parameterMap.at("SD_RELATIONSHIP_PERIOD").dbl();
 
     // Relationship period parameter for beginning of period
@@ -571,15 +573,14 @@ public:
       agent->desiredAge = sample_matMM[age - 12]() + 12;
     // Agent's deviation from mean for period spent in relationships or single
     std::normal_distribution<double>
-      normSingle(meanSinglePeriodDeviation, sdSinglePeriodDeviation);
+      normSingle(meanSinglePeriodFactor, sdSinglePeriodFactor);
     std::normal_distribution<double>
-      normCasual(meanCasualSexDeviation, sdCasualSexDeviation);
+      normCasual(meanCasualSexFactor, sdCasualSexFactor);
     std::normal_distribution<double>
-      normRelationship(meanRelationshipPeriodDeviation,
-                       sdRelationshipPeriodDeviation);
-    agent->singlePeriodDeviation = std::max(normSingle(rng), 0.0);
-    agent->relationshipPeriodDeviation = std::max(normRelationship(rng), 0.0);
-    agent->casualSexDeviation = std::max(normCasual(rng), 0.0);
+      normRelationship(meanRelationshipPeriodFactor, sdRelationshipPeriodFactor);
+    agent->singlePeriodFactor = std::max(normSingle(rng), 0.0);
+    agent->relationshipPeriodFactor = std::max(normRelationship(rng), 0.0);
+    agent->casualSexFactor = std::max(normCasual(rng), 0.0);
   }
 
 
@@ -772,30 +773,6 @@ public:
         ++numInfectedWsw;
     }
   }
-
-  /**
-     Creates the mating pool on each iteration of the time step.
-  */
-  AgentVector getMatingPool()
-  {
-    AgentVector matingPool;
-    for (auto& agent : agents) {
-      if (agent->isMatchable(currentDate, probCasualSex)) matingPool.push_back(agent);
-    }
-    if (matingPool.size() % 2 == 1) matingPool.pop_back();
-    if (printNumMatings) csvout("MATINGPOOL", "", matingPool.size());
-    std::shuffle(matingPool.begin(), matingPool.end(), rng);
-    return matingPool;
-  }
-
-  /**
-     Calculates the closest partnership in a contiguous list of agents to
-     the first one in the list.
-
-     @param from[in] Iterator to agent against which the other agents
-     are compared for partnership compatibility.
-     @param to[in] Iterator to one past last agent in contiguous list
-  */
 
   PartnershipScore
   closestPairMatchN(std::vector<Agent *>::iterator from,

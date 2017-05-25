@@ -274,8 +274,14 @@ public:
 
     addParameter("AGE_EVENT", "Execute the aging event", {1});
     addParameter("INFECT_EVENT", "Execute the infection event", {1});
-    addParameter("BREAKUP_EVENT",
-                 "Execute the infection event", {1});
+    addParameter("DATA_BREAKUP_EVENT",
+                 "Execute the data based breakup event", {1});
+    addParameter("FREQUENCY_BREAKUP_EVENT",
+                 "Execute the frequency based breakup event", {0});
+    addParameter("DATA_MATING_EVENT",
+                 "Execute the data based mating pool creation event", {1});
+    addParameter("FREQUENCY_MATING_EVENT",
+                 "Execute the frequency based mating pool creation event", {0});
 
     addParameter("OUTPUT_NUM_BREAKUPS",
                  "Print number of breakups on every time step", {0});
@@ -324,7 +330,7 @@ public:
                  "if its partner is infected", {0.5});
 
     addParameter("MEAN_RATE_PAIRS",
-                 "Mean time step rate of number of partnerships", {0.005});
+                 "Mean time step rate of number of partnerships", {0.002});
     addParameter("SD_RATE_PAIRS",
                  "Standard deviation rate of mean number of partnerships", {0.1});
 
