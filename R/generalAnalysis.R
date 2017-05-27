@@ -20,5 +20,5 @@ partnerships = partnerships[partnerships$Date==analysisDate,]
 
 meanPartnerships = aggregate(partnerships$Value, by=list(partnerships$Name),
                               FUN=mean)
-sprintf("%s,%f", meanPrevalences)
-sprintf("%s,%f", meanPartnerships)
+sprintf("%s,%f", meanPrevalences$Group.1, meanPrevalences$x)
+sprintf("%s,%f", meanPartnerships$Group.1, meanPartnerships$x)
