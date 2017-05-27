@@ -20,3 +20,5 @@ partnerships = partnerships[partnerships$Date==analysisDate,]
 
 meanPartnerships = aggregate(partnerships$Value, by=list(partnerships$Name),
                               FUN=mean)
+meanPrevalences
+meanPartnerships
