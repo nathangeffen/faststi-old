@@ -274,14 +274,10 @@ public:
 
     addParameter("AGE_EVENT", "Execute the aging event", {1});
     addParameter("INFECT_EVENT", "Execute the infection event", {1});
-    addParameter("DATA_BREAKUP_EVENT",
-                 "Execute the data based breakup event", {1});
-    addParameter("FREQUENCY_BREAKUP_EVENT",
-                 "Execute the frequency based breakup event", {0});
-    addParameter("DATA_MATING_EVENT",
-                 "Execute the data based mating pool creation event", {1});
-    addParameter("FREQUENCY_MATING_EVENT",
-                 "Execute the frequency based mating pool creation event", {0});
+    addParameter("BREAKUP_EVENT",
+                 "Execute the data based breakup event", "DATA");
+    addParameter("MATING_POOL_EVENT",
+                 "Execute the data based mating pool creation event", "DATA");
 
     addParameter("OUTPUT_NUM_BREAKUPS",
                  "Print number of breakups on every time step", {0});

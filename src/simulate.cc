@@ -136,17 +136,16 @@ void infectEvent(Simulation* simulation)
   }
 }
 
-void dataBasedBreakupEvent(Simulation* simulation)
+void breakupCommon(Simulation *simulation, unsigned breakups)
 {
-  // double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
-  // double sd = simulation->sdRatePairs * mean;
-  // std::normal_distribution<double> dist(mean, sd);
-  // unsigned maxBreakups = (unsigned) std::max(0.0, dist(rng));
-  // std::shuffle(simulation->agents.begin(), simulation->agents.end(), rng);
+  if (simulation->printNumBreakups) simulation->csvout("BREAKUPS", "", breakups);
+  simulation->totalBreakups += breakups;
+}
 
+void dataBaseBreakupEvent(Simulation* simulation)
+{
   unsigned breakups = 0;
   for (auto& agent: simulation->agents) {
-    //  if (breakups >= maxBreakups) break;
     if (agent->partner &&
         ( (simulation->currentDate + DAY / 2.0) > agent->relationshipChangeDate) ) {
       Agent* partner = agent->partner;
@@ -169,8 +168,7 @@ void dataBasedBreakupEvent(Simulation* simulation)
       ++breakups;
     }
   }
-  if (simulation->printNumBreakups) simulation->csvout("BREAKUPS", "", breakups);
-  simulation->totalBreakups += breakups;
+  breakupCommon(simulation, breakups);
 }
 
 void frequencyBreakupEvent(Simulation *simulation)
@@ -193,16 +191,65 @@ void frequencyBreakupEvent(Simulation *simulation)
         agent->partner->partner = NULL;
         agent->partner = NULL;
         ++breakups;
-      } else {
-        std::cerr << "D1: " << relationshipPeriodFactor << std::endl;
       }
     }
   }
-  if (simulation->printNumBreakups) simulation->csvout("BREAKUPS", "", breakups);
-  simulation->totalBreakups += breakups;
+  breakupCommon(simulation, breakups);
 }
 
-void dataBasedMatingPoolEvent(Simulation* simulation)
+void dataBaseAndFrequencyBreakupEvent(Simulation *simulation)
+{
+  AgentVector partners;
+  // Find all agents who are in partnerships and, to prevent duplication,
+  // have a lower id than their partner
+  for (auto& agent: simulation->agents) {
+    if (agent->partner && agent->id < agent->partner->id) partners.push_back(agent);
+  }
+
+  double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
+  double sd = simulation->sdRatePairs * mean;
+  std::normal_distribution<double> norm(mean, sd);
+  size_t breakups = std::min( (size_t) std::max(0.0, norm(rng)), partners.size());
+
+  nth_element(partners.begin(), partners.begin() + breakups, partners.end(),
+              [](const Agent *a, const Agent *b)
+              {
+                return a->relationshipChangeDate < b->relationshipChangeDate;
+              });
+
+  for (auto it = partners.begin(); it < partners.begin() + breakups; ++it) {
+    auto agent = *it;
+    auto partner = agent->partner;
+    agent->partner->partner = NULL;
+    agent->partner = NULL;
+    agent->setSinglePeriod(simulation->currentDate,
+                           simulation->weibullSinglePeriodFirstTime,
+                           simulation->scaleVirginPeriod,
+                           simulation->weibullSinglePeriodSubsequentTimes,
+                           simulation->scaleSinglePeriodDuring,
+                           simulation->probZeroSinglePeriod,
+                           simulation->scaleSinglePeriodZeroDaysDuring);
+    partner->setSinglePeriod(simulation->currentDate,
+                             simulation->weibullSinglePeriodFirstTime,
+                             simulation->scaleVirginPeriod,
+                             simulation->weibullSinglePeriodSubsequentTimes,
+                             simulation->scaleSinglePeriodDuring,
+                             simulation->probZeroSinglePeriod,
+                             simulation->scaleSinglePeriodZeroDaysDuring);
+  }
+  breakupCommon(simulation, breakups);
+}
+
+
+void matingPoolCommon(Simulation* simulation)
+{
+  if (simulation->matingPool.size() % 2 == 1) simulation->matingPool.pop_back();
+  if (simulation->printNumMatings) {
+    simulation->csvout("MATINGPOOL", "", simulation->matingPool.size());
+  }
+}
+
+void dataBaseMatingPoolEvent(Simulation* simulation)
 {
   simulation->matingPool.clear();
   for (auto& agent : simulation->agents) {
@@ -210,44 +257,60 @@ void dataBasedMatingPoolEvent(Simulation* simulation)
       simulation->matingPool.push_back(agent);
     }
   }
-  if (simulation->matingPool.size() % 2 == 1) simulation->matingPool.pop_back();
-  if (simulation->printNumMatings) {
-    simulation->csvout("MATINGPOOL", "", simulation->matingPool.size());
-  }
   std::shuffle(simulation->matingPool.begin(), simulation->matingPool.end(), rng);
+  matingPoolCommon(simulation);
 }
 
 void frequencyMatingPoolEvent(Simulation* simulation)
 {
-    unsigned matingAgents = 0;
-    double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
-    double sd = simulation->sdRatePairs * mean;
-    std::normal_distribution<double> norm(mean, sd);
-    unsigned maxMatingAgents = (unsigned) std::max(0.0, norm(rng)) * 2;
-    std::shuffle(simulation->agents.begin(), simulation->agents.end(), rng);
-    std::uniform_real_distribution<double> uni(0.0, 1.0);
+  unsigned matingAgents = 0;
+  double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
+  double sd = simulation->sdRatePairs * mean;
+  std::normal_distribution<double> norm(mean, sd);
+  unsigned maxMatingAgents = (unsigned) std::max(0.0, norm(rng)) * 2;
+  std::shuffle(simulation->agents.begin(), simulation->agents.end(), rng);
 
-    simulation->matingPool.clear();
-    for (auto it = simulation->agents.begin();
-         it != simulation->agents.end() && matingAgents < maxMatingAgents; ++it) {
-      auto agent = *it;
-      if (agent->partner == NULL && uni(rng) < agent->singlePeriodFactor) {
-        simulation->matingPool.push_back(agent);
-        ++matingAgents;
-      }
+  simulation->matingPool.clear();
+  std::uniform_real_distribution<double> uni;
+  for (auto it = simulation->agents.begin();
+       it != simulation->agents.end() && matingAgents < maxMatingAgents; ++it) {
+    auto agent = *it;
+    if (agent->partner == NULL && uni(rng) < agent->singlePeriodFactor) {
+      simulation->matingPool.push_back(agent);
+      ++matingAgents;
     }
-    if (simulation->matingPool.size() % 2 == 1) simulation->matingPool.pop_back();
-    if (simulation->printNumMatings) {
-      simulation->csvout("MATINGPOOL", "", simulation->matingPool.size());
-    }
+  }
+  matingPoolCommon(simulation);
+}
+
+void databaseAndFrequencyMatingPoolEvent(Simulation *simulation)
+{
+  simulation->matingPool.clear();
+
+  for (auto& agent: simulation->agents) {
+    if (agent->partner == NULL) simulation->matingPool.push_back(agent);
+  }
+
+  double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
+  double sd = simulation->sdRatePairs * mean;
+  std::normal_distribution<double> norm(mean, sd);
+  size_t maxMatingAgents = std::min( (size_t) std::max(0.0, norm(rng)) * 2,
+                                     simulation->matingPool.size());
+
+  nth_element(simulation->matingPool.begin(),
+              simulation->matingPool.begin() + maxMatingAgents,
+              simulation->matingPool.end(),
+              [](const Agent *a, const Agent *b)
+              {
+                return a->relationshipChangeDate < b->relationshipChangeDate;
+              });
+
+  simulation->matingPool.resize(maxMatingAgents);
+  matingPoolCommon(simulation);
 }
 
 void randomMatchEvent(Simulation* simulation)
 {
-  // struct timeval timeBegin, timeEnd;
-  // double elapsedTime;
-  // gettimeofday(&timeBegin, NULL);
-
   AgentVector& unmatchedAgents = simulation->matingPool;
 
   if (unmatchedAgents.size() > 0)
@@ -370,18 +433,30 @@ void Simulation::setEvents()
 {
   if (parameterMap.at("AGE_EVENT").isSet()) events.push_back(ageEvent);
   if (parameterMap.at("INFECT_EVENT").isSet()) events.push_back(infectEvent);
-  if (parameterMap.at("DATA_BREAKUP_EVENT").isSet()) {
-    events.push_back(dataBasedBreakupEvent);
-  } else if (parameterMap.at("FREQUENCY_BREAKUP_EVENT").isSet()) {
-   events.push_back(frequencyBreakupEvent);
-  };
-  if (parameterMap.at("DATA_MATING_EVENT").isSet()) {
-    events.push_back(dataBasedMatingPoolEvent);
-  } else if (parameterMap.at("FREQUENCY_MATING_EVENT").isSet()) {
-    events.push_back(frequencyMatingPoolEvent);
+
+  string s = parameterMap.at("BREAKUP_EVENT").str();
+  if (s == "DATA") {
+    events.push_back(dataBaseBreakupEvent);
+  } else if (s == "FREQUENCY") {
+    events.push_back(frequencyBreakupEvent);
+  } else if (s == "BOTH") {
+    events.push_back(dataBaseAndFrequencyBreakupEvent);
+  } else if (s != "NONE") {
+    throw std::runtime_error("Unknown breakup event");
   };
 
-  string s = parameterMap.at("MATCH_EVENT").str();
+  s = parameterMap.at("MATING_POOL_EVENT").str();
+  if (s == "DATA") {
+    events.push_back(dataBaseMatingPoolEvent);
+  } else if (s == "FREQUENCY") {
+    events.push_back(frequencyMatingPoolEvent);
+  } else if (s == "BOTH") {
+    events.push_back(databaseAndFrequencyMatingPoolEvent);
+  } else if (s != "NONE") {
+    throw std::runtime_error("Unknown breakup event");
+  };
+
+  s = parameterMap.at("MATCH_EVENT").str();
   if (s == "RPM") {
     events.push_back(randomMatchEvent);
   } else if (s == "RKPM") {
