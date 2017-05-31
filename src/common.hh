@@ -11,8 +11,8 @@
 #define NUM_INTERVALS ( MAX_AGE / AGE_INTERVAL + 1 )
 
 
-#define FEMALE 0
-#define MALE 1
+#define MALE 0
+#define FEMALE 1
 #define HOMOSEXUAL 0
 #define HETEROSEXUAL 1
 

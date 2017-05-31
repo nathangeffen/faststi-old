@@ -142,7 +142,7 @@ void breakupCommon(Simulation *simulation, unsigned breakups)
   simulation->totalBreakups += breakups;
 }
 
-void dataBaseBreakupEvent(Simulation* simulation)
+void dataBreakupEvent(Simulation* simulation)
 {
   unsigned breakups = 0;
   for (auto& agent: simulation->agents) {
@@ -171,7 +171,39 @@ void dataBaseBreakupEvent(Simulation* simulation)
   breakupCommon(simulation, breakups);
 }
 
-void frequencyBreakupEvent(Simulation *simulation)
+void frequencyBreakupEvent(Simulation* simulation)
+{
+  unsigned breakups = 0;
+  std::uniform_real_distribution<double> uni(0.0, 1.0);
+  for (auto& agent: simulation->agents) {
+    if (agent->partner) {
+      bool executeBreakup = false;
+      if (agent->casualSex == true || agent->partner->casualSex == true) {
+        agent->casualSex = agent->partner->casualSex = false;
+        ++simulation->casualSexEncounters;
+        executeBreakup = true;
+      } else {
+
+        size_t index = std::min( (size_t) agent->age - MIN_AGE,
+                                 (size_t) simulation->breakupProb.size() - 1);
+        double prob1 = simulation->breakupProb[index][1 + agent->sex];
+        index = std::min( (size_t) agent->partner->age - MIN_AGE,
+                          (size_t) simulation->breakupProb.size() - 1);
+        double prob2 = simulation->breakupProb[index][1 + agent->partner->sex];
+        double prob = (prob1 + prob2) / 2.0;
+        if (uni(rng) < prob) executeBreakup = true;
+      }
+      if (executeBreakup == true) {
+        agent->partner->partner = NULL;
+        agent->partner = NULL;
+        ++breakups;
+      }
+    }
+  }
+  breakupCommon(simulation, breakups);
+}
+
+void randomBreakupEvent(Simulation *simulation)
 {
   unsigned breakups = 0;
   double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
@@ -197,7 +229,7 @@ void frequencyBreakupEvent(Simulation *simulation)
   breakupCommon(simulation, breakups);
 }
 
-void dataBaseAndFrequencyBreakupEvent(Simulation *simulation)
+void dataAndRandomBreakupEvent(Simulation *simulation)
 {
   AgentVector partners;
   // Find all agents who are in partnerships and, to prevent duplication,
@@ -249,7 +281,7 @@ void matingPoolCommon(Simulation* simulation)
   }
 }
 
-void dataBaseMatingPoolEvent(Simulation* simulation)
+void dataMatingPoolEvent(Simulation* simulation)
 {
   simulation->matingPool.clear();
   for (auto& agent : simulation->agents) {
@@ -261,7 +293,34 @@ void dataBaseMatingPoolEvent(Simulation* simulation)
   matingPoolCommon(simulation);
 }
 
+
 void frequencyMatingPoolEvent(Simulation* simulation)
+{
+  simulation->matingPool.clear();
+  for (auto& agent: simulation->agents) {
+    std::uniform_real_distribution<double> uni(0.0, 1.0);
+    if (agent->partner == NULL) {
+      size_t index = std::min( (size_t) agent->age - MIN_AGE,
+                               (size_t) simulation->relationshipProb.size() - 1);
+      if (uni(rng) < simulation->relationshipProb[index][agent->sex + 2] *
+          agent->singlePeriodFactor) {
+        simulation->matingPool.push_back(agent);
+      } else {
+        size_t index = std::min( (size_t) agent->age - MIN_AGE,
+                                 (size_t) simulation->probCasualSex.size() - 1);
+        if (uni(rng) < (simulation->probCasualSex[index][1] * agent->casualSexFactor)) {
+          agent->casualSex = true;
+          simulation->matingPool.push_back(agent);
+        }
+      }
+    }
+  }
+  std::shuffle(simulation->matingPool.begin(), simulation->matingPool.end(), rng);
+  matingPoolCommon(simulation);
+}
+
+
+void randomMatingPoolEvent(Simulation* simulation)
 {
   unsigned matingAgents = 0;
   double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
@@ -283,7 +342,7 @@ void frequencyMatingPoolEvent(Simulation* simulation)
   matingPoolCommon(simulation);
 }
 
-void databaseAndFrequencyMatingPoolEvent(Simulation *simulation)
+void dataAndRandomMatingPoolEvent(Simulation *simulation)
 {
   simulation->matingPool.clear();
 
@@ -436,22 +495,26 @@ void Simulation::setEvents()
 
   string s = parameterMap.at("BREAKUP_EVENT").str();
   if (s == "DATA") {
-    events.push_back(dataBaseBreakupEvent);
-  } else if (s == "FREQUENCY") {
+    events.push_back(dataBreakupEvent);
+  } else  if (s == "FREQUENCY") {
     events.push_back(frequencyBreakupEvent);
+  } else if (s == "RANDOM") {
+    events.push_back(randomBreakupEvent);
   } else if (s == "BOTH") {
-    events.push_back(dataBaseAndFrequencyBreakupEvent);
+    events.push_back(dataAndRandomBreakupEvent);
   } else if (s != "NONE") {
     throw std::runtime_error("Unknown breakup event");
   };
 
   s = parameterMap.at("MATING_POOL_EVENT").str();
   if (s == "DATA") {
-    events.push_back(dataBaseMatingPoolEvent);
-  } else if (s == "FREQUENCY") {
+    events.push_back(dataMatingPoolEvent);
+  } else  if (s == "FREQUENCY") {
     events.push_back(frequencyMatingPoolEvent);
+  } else if (s == "RANDOM") {
+    events.push_back(randomMatingPoolEvent);
   } else if (s == "BOTH") {
-    events.push_back(databaseAndFrequencyMatingPoolEvent);
+    events.push_back(dataAndRandomMatingPoolEvent);
   } else if (s != "NONE") {
     throw std::runtime_error("Unknown breakup event");
   };
@@ -469,24 +532,6 @@ void Simulation::setEvents()
     throw std::runtime_error("Unknown matching algorithm");
   }
 }
-
-
-/**
-   Writes analytical information in comma separated format to stdout.
-
-   @param desc1[in] Description 1
-   @param desc2[in] Description 2
-   @param value[in] Parameter to print
-*/
-// inline void csvout(const unsigned simulationNum,
-//                    const double date,
-//                    const std::string& key,
-//                    const ParameterValue& value)
-// {
-//   std::ostringstream stream;
-//   stream << (value.isString ? value.strValue : value.value[0]);
-//   csvout("PARAMETER", key, stream);
-// }
 
 
 void callSimulation(ParameterMap parameterMap,

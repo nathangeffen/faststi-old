@@ -281,10 +281,12 @@ public:
 
     addParameter("OUTPUT_NUM_BREAKUPS",
                  "Print number of breakups on every time step", {0});
-    addParameter("MATCH_EVENT",
-                 "Execute the infection event (RPM,RKPM,CSPM)", "RPM");
     addParameter("OUTPUT_NUM_MATINGPOOL",
                  "Print number in mating pool on every time step", {0});
+
+    addParameter("MATCH_EVENT",
+                 "Execute the infection event (RPM,RKPM,CSPM)", "RPM");
+
     addParameter("DISTANCE_METHOD",
                  "Distance calculation to use (HEURISTIC,TABLE)", "HEURISTIC");
 
@@ -321,6 +323,14 @@ public:
     addParameter("SCALE_REL_CSV",
                  "File of scales for partnership", "data/Rel_scale.csv");
 
+    addParameter("FREQUENCY_RELATIONSHIP_CSV",
+                 "File of probabilities that agent forms relationship",
+                 "data/dailyEnterRelationship.csv");
+
+    addParameter("FREQUENCY_BREAKUP_CSV",
+                 "File of probabilities that agent breaks relationship",
+                 "data/dailyBreakup.csv");
+
     addParameter("PROB_INFECTED_IF_PARTNER",
                  "Probability on initialization of an agent being infected "
                  "if its partner is infected", {0.5});
@@ -329,6 +339,7 @@ public:
                  "Mean time step rate of number of partnerships", {0.002});
     addParameter("SD_RATE_PAIRS",
                  "Standard deviation rate of mean number of partnerships", {0.1});
+
 
 
     // Parameters that may need to be fitted

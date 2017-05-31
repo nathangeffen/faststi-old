@@ -161,6 +161,8 @@ public:
   DblMatrix weibullSinglePeriodSubsequentTimes;
   DblMatrix probVirgin;
   DblMatrix probCasualSex;
+  DblMatrix breakupProb;
+  DblMatrix relationshipProb;
   DblMatrix shapeRelationshipPeriod;
   DblMatrix scaleRelationshipPeriod;
   DblMatrix mswAgeDist;
@@ -315,6 +317,16 @@ public:
     // Weibull parameters per age for setting relationship length
     shapeRelationshipPeriod = matrixFromCSV("SHAPE_REL_CSV", ",", true);
     scaleRelationshipPeriod = matrixFromCSV("SCALE_REL_CSV", ",", true);
+    breakupProb = matrixFromCSV("FREQUENCY_BREAKUP_CSV", ",", true);
+    for (auto& entry: breakupProb) {
+      entry[1] *= scaleModifierRelationshipPeriod;
+      entry[2] *= scaleModifierRelationshipPeriod;
+    }
+    relationshipProb = matrixFromCSV("FREQUENCY_RELATIONSHIP_CSV", ",", true);
+    for (auto& entry: relationshipProb) {
+      entry[1] *= scaleSinglePeriodDuring;
+      entry[2] *= scaleSinglePeriodDuring;
+    }
   }
 
   /**
@@ -1173,7 +1185,7 @@ public:
      algorithms, such as CSPM.
 
      @param a[in] Agent whose cluster value to calculate
-   */
+  */
   double clusterValue(const Agent *a) const
   {
     return ( (double) a->desiredAge / 100.0 + a->age / 100.0) / 2.0
