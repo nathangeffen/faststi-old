@@ -30,3 +30,9 @@ finalFittedParms.txt
 # ignore Blossom V source which is not redistributable
 blossom5-v1.0.src/
 
+# ignore generated graph files for Blossom V
+bv_*
+
+# ignore analysis output (add csv and pdf files explicitly)
+*.pdf
+*.csv

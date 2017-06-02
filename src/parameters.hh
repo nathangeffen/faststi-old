@@ -275,9 +275,11 @@ public:
     addParameter("AGE_EVENT", "Execute the aging event", {1});
     addParameter("INFECT_EVENT", "Execute the infection event", {1});
     addParameter("BREAKUP_EVENT",
-                 "Execute the data based breakup event", "DATA");
+                 "Algorithm breakup event (FREQUENCY/LIMIT/RANDOM/NONE)",
+                 "FREQUENCY");
     addParameter("MATING_POOL_EVENT",
-                 "Execute the data based mating pool creation event", "DATA");
+                 "Algorithm for mating pool creation event "
+                 "(FREQUENCY/LIMIT/RANDOM/NONE)", "FREQUENCY");
 
     addParameter("OUTPUT_NUM_BREAKUPS",
                  "Print number of breakups on every time step", {0});
@@ -298,30 +300,9 @@ public:
     addParameter("RANDOM_SEED", "Value to set random seed to",
                  {1});
 
-    addParameter("PROB_ZERO_DAYS_SINGLE_CSV",
-                 "File of probabilities by age that agents stay single for "
-                 "zero days.", "data/probZeroDays.csv");
-
-    addParameter("WEIBULL_SINGLE_INITIAL_CSV",
-                 "File of scales and shapes for single period during simulation",
-                 "data/SingleInitial.csv");
-
-    addParameter("WEIBULL_SINGLE_DURING_CSV",
-                 "File of scales and shapes for single period during simulation",
-                 "data/SingleDuring.csv");
-
-    addParameter("PROB_VIRGIN_CSV",
-                 "File of probabilities that agent of particular age is a virgin",
-                 "data/probVirgin.csv");
-
     addParameter("PROB_CASUAL_SEX_CSV",
                  "File of probabilities that single agent has 'one night stand'",
                  "data/ONSProbSimple.csv");
-
-    addParameter("SHAPE_REL_CSV",
-                 "File of shapes for partnership", "data/Rel_shape.csv");
-    addParameter("SCALE_REL_CSV",
-                 "File of scales for partnership", "data/Rel_scale.csv");
 
     addParameter("FREQUENCY_RELATIONSHIP_CSV",
                  "File of probabilities that agent forms relationship",
@@ -338,42 +319,29 @@ public:
     addParameter("MEAN_RATE_PAIRS",
                  "Mean time step rate of number of partnerships", {0.002});
     addParameter("SD_RATE_PAIRS",
-                 "Standard deviation rate of mean number of partnerships", {0.1});
-
-
+                 "Standard deviation rate of mean number of partnerships",{0.1});
 
     // Parameters that may need to be fitted
+    addParameter("SCALE_SINGLE_PROB",
+                 "Multiply single period probabilities this", {1.0});
+    addParameter("SCALE_RELATIONSHIP_PROB",
+                 "Multiply relationship probabilities by this", {1.0});
+    addParameter("SCALE_CASUAL_SEX_PROB",
+                 "Multiply casual sex probabilities by this", {1.0});
 
-    addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL",
-                 "Factor < 1.0 to multiple probability of being single "
-                 "for zero days at initialization", {0.0});
-    addParameter("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING",
-                 "Factor < 1.0 to multiple probability of being single "
-                 "for zero days during simulation", {1.0});
 
-    addParameter("SCALE_VIRGIN_PERIOD",
-                 "Multiply Weibull initial single period scale parameters "
-                 "by this", {1.0});
-    addParameter("SCALE_SINGLE_PERIOD_INITIAL",
-                 "Multiply single period by this during initialization", {1.0});
-    addParameter("SCALE_SINGLE_PERIOD_DURING",
-                 "Multiply single period by this during simulation", {1.0});
     addParameter("MEAN_SINGLE_PERIOD",
                  "Mean difference from expected single period", {1.0});
     addParameter("SD_SINGLE_PERIOD",
                  "Standard deviation of single period", {0.0});
 
-    addParameter("SCALE_RELATIONSHIP_PERIOD_INITIAL",
-                 "Multiply relationship scale parameters by this", {1.0});
-    addParameter("SCALE_RELATIONSHIP_PERIOD_DURING",
-                 "Multiply relationship scale parameters by this", {1.0});
     addParameter("MEAN_RELATIONSHIP_PERIOD",
                  "Mean difference from expected relationship period.", {1.0});
     addParameter("SD_RELATIONSHIP_PERIOD",
                  "Standard deviation of relationship period.", {0.0});
 
     addParameter("MEAN_CASUAL_SEX",
-                 "Mean factored difference from likelihood of casual sex", {1.0});
+                 "Mean factored difference from likelihood of casual sex",{1.0});
     addParameter("SD_CASUAL_SEX",
                  "Standard deviation from likelihood of casual sex", {0.0});
 

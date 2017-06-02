@@ -83,30 +83,27 @@ public:
   double endDate;
   double timeStep;
 
-  double scaleSinglePeriodZeroDaysInitial;
-  double scaleSinglePeriodZeroDaysDuring;
-  double scaleVirginPeriod;
-  double scaleSinglePeriodInitial;
-  double scaleSinglePeriodDuring;
+  double meanRatePairsTimeStep;
+  double sdRatePairs;
+
+  double scaleSingleProb;
+  double scaleRelationshipProb;
+  double scaleCasualSexProb;
 
   double meanSinglePeriodFactor;
   double sdSinglePeriodFactor;
 
-  double meanCasualSexFactor;
-  double sdCasualSexFactor;
-
-  double scaleModifierRelationshipPeriod;
   double meanRelationshipPeriodFactor;
   double sdRelationshipPeriodFactor;
+
+  double meanCasualSexFactor;
+  double sdCasualSexFactor;
 
   double hetMaleInfectiousness;
   double homMaleInfectiousness;
   double hetFemaleInfectiousness;
   double homFemaleInfectiousness;
   double probInfectedIfPartnerInfected;
-
-  double meanRatePairsTimeStep;
-  double sdRatePairs;
 
   bool printNumMatings;
   bool printNumBreakups;
@@ -157,19 +154,13 @@ public:
   unsigned maxAge;
   unsigned casualSexEncounters = 0;
 
-  DblMatrix weibullSinglePeriodFirstTime;
-  DblMatrix weibullSinglePeriodSubsequentTimes;
-  DblMatrix probVirgin;
-  DblMatrix probCasualSex;
   DblMatrix breakupProb;
   DblMatrix relationshipProb;
-  DblMatrix shapeRelationshipPeriod;
-  DblMatrix scaleRelationshipPeriod;
+  DblMatrix casualSexProb;
   DblMatrix mswAgeDist;
   DblMatrix wsmAgeDist;
   DblMatrix msmAgeDist;
   DblMatrix wswAgeDist;
-  DblMatrix probZeroSinglePeriod;
 
   AgentVector matingPool;
 
@@ -243,34 +234,31 @@ public:
       parameterMap.at("HOM_FEMALE_INFECTIOUSNESS").dbl();
 
     // Single period parameters
-    scaleSinglePeriodZeroDaysInitial =
-      parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_INITIAL").dbl();
-    scaleSinglePeriodZeroDaysDuring =
-      parameterMap.at("SCALE_SINGLE_PERIOD_ZERO_DAYS_DURING").dbl();
-
-    scaleVirginPeriod = parameterMap.at("SCALE_VIRGIN_PERIOD").dbl();
-    scaleSinglePeriodInitial = parameterMap.at("SCALE_SINGLE_PERIOD_INITIAL").dbl();
-    scaleSinglePeriodDuring = parameterMap.at("SCALE_SINGLE_PERIOD_DURING").dbl();
+    scaleSingleProb = parameterMap.at("SCALE_SINGLE_PROB").dbl();
 
     meanSinglePeriodFactor =
       parameterMap.at("MEAN_SINGLE_PERIOD").dbl();
     sdSinglePeriodFactor =
       parameterMap.at("SD_SINGLE_PERIOD").dbl();
 
-    meanCasualSexFactor =
-      parameterMap.at("MEAN_CASUAL_SEX").dbl();
-    sdCasualSexFactor =
-      parameterMap.at("SD_CASUAL_SEX").dbl();
-
     // Relationship period parameters
+    scaleRelationshipProb =
+      parameterMap.at("SCALE_RELATIONSHIP_PROB").dbl();
+
+
     meanRelationshipPeriodFactor =
       parameterMap.at("MEAN_RELATIONSHIP_PERIOD").dbl();
     sdRelationshipPeriodFactor =
       parameterMap.at("SD_RELATIONSHIP_PERIOD").dbl();
 
-    // Relationship period parameter for beginning of period
-    scaleModifierRelationshipPeriod =
-      parameterMap.at("SCALE_RELATIONSHIP_PERIOD_INITIAL").dbl();
+
+    // Casual sex parameters
+    scaleCasualSexProb = parameterMap.at("SCALE_CASUAL_SEX_PROB").dbl();
+
+    meanCasualSexFactor = parameterMap.at("MEAN_CASUAL_SEX").dbl();
+    sdCasualSexFactor = parameterMap.at("SD_CASUAL_SEX").dbl();
+
+
 
     // Probability an agent is infected at initialisation if partner infected
     probInfectedIfPartnerInfected =
@@ -302,30 +290,20 @@ public:
     wswAgeDist = matrixFromCSV("WSW_AGE_DIST_CSV", ",", true);
     mswAgeDist = matrixFromCSV("MSW_AGE_DIST_CSV", ",", true);
     wsmAgeDist = matrixFromCSV("WSM_AGE_DIST_CSV", ",", true);
-    probZeroSinglePeriod = matrixFromCSV("PROB_ZERO_DAYS_SINGLE_CSV", ",", true);
-
-    // Weibull parameters per age for setting single period
-    weibullSinglePeriodFirstTime =
-      matrixFromCSV("WEIBULL_SINGLE_INITIAL_CSV", ",", true);
-
-    weibullSinglePeriodSubsequentTimes =
-      matrixFromCSV("WEIBULL_SINGLE_DURING_CSV", ",", true);
-
-    probVirgin =  matrixFromCSV("PROB_VIRGIN_CSV", ",", true);
-    probCasualSex = matrixFromCSV("PROB_CASUAL_SEX_CSV", ",", true);
-
-    // Weibull parameters per age for setting relationship length
-    shapeRelationshipPeriod = matrixFromCSV("SHAPE_REL_CSV", ",", true);
-    scaleRelationshipPeriod = matrixFromCSV("SCALE_REL_CSV", ",", true);
     breakupProb = matrixFromCSV("FREQUENCY_BREAKUP_CSV", ",", true);
+
     for (auto& entry: breakupProb) {
-      entry[1] *= scaleModifierRelationshipPeriod;
-      entry[2] *= scaleModifierRelationshipPeriod;
+      entry[1] *= scaleSingleProb;
+      entry[2] *= scaleSingleProb;
     }
     relationshipProb = matrixFromCSV("FREQUENCY_RELATIONSHIP_CSV", ",", true);
     for (auto& entry: relationshipProb) {
-      entry[1] *= scaleSinglePeriodDuring;
-      entry[2] *= scaleSinglePeriodDuring;
+      entry[1] *= scaleRelationshipProb;
+      entry[2] *= scaleRelationshipProb;
+    }
+    casualSexProb = matrixFromCSV("PROB_CASUAL_SEX_CSV", ",", true);
+    for (auto& entry: casualSexProb) {
+      entry[1] *= scaleCasualSexProb;
     }
   }
 
@@ -523,9 +501,6 @@ public:
     // Get the initial demographic information for reporting
     calculateDemographics();
 
-    // Relationship period parameter for during simulation
-    scaleModifierRelationshipPeriod =
-      parameterMap.at("SCALE_RELATIONSHIP_PERIOD_DURING").dbl();
   }
 
 
@@ -553,7 +528,6 @@ public:
     std::uniform_real_distribution<double> uni;
 
     agent->id = id;
-
     // Age
     unsigned age = sampleAgeshare() + 12;
     // Add a random part of the year onto the age
@@ -587,9 +561,10 @@ public:
     std::normal_distribution<double>
       normSingle(meanSinglePeriodFactor, sdSinglePeriodFactor);
     std::normal_distribution<double>
-      normCasual(meanCasualSexFactor, sdCasualSexFactor);
-    std::normal_distribution<double>
       normRelationship(meanRelationshipPeriodFactor, sdRelationshipPeriodFactor);
+    std::normal_distribution<double>
+      normCasual(meanCasualSexFactor, sdCasualSexFactor);
+
     agent->singlePeriodFactor = std::max(normSingle(rng), 0.0);
     agent->relationshipPeriodFactor = std::max(normRelationship(rng), 0.0);
     agent->casualSexFactor = std::max(normCasual(rng), 0.0);
@@ -701,26 +676,12 @@ public:
                             initialInfectionRatesWSW);
 
         makePartner(agent, partner, distance(agent, partner));
-        // Correct relationship time because this is in the middle of relationship
-
-        //std::uniform_real_distribution<double>
-        //  uni2(currentDate, agent->relationshipChangeDate);
-        // agent->relationshipChangeDate = uni2(rng);
-        // partner->relationshipChangeDate = agent->relationshipChangeDate;
 
         if (agent->infected == true && partner->infected == false) {
           conditionalInfectPartner(partner);
         } else if (agent->infected == false && partner->infected == true) {
           conditionalInfectPartner(agent);
         }
-      } else {
-    agent->setSinglePeriod(currentDate,
-                           weibullSinglePeriodFirstTime,
-                           scaleVirginPeriod,
-                           weibullSinglePeriodSubsequentTimes,
-                           scaleSinglePeriodInitial,
-                           probZeroSinglePeriod,
-                           scaleSinglePeriodZeroDaysInitial);
       }
       agents.push_back(agent);
       if (agent->partner) agents.push_back(agent->partner);
@@ -1067,19 +1028,13 @@ public:
   void makePartner(Agent* a, Agent *b,
                    const double score)
   {
-    //// assert(a->partner == NULL);
     assert(b->partner == NULL);
-
     if (score < failureThresholdScore) {
       if (score > poorThresholdScore) ++poorMatches;
       totalPartnershipScore += score;
       partnerships.insert(a->id, b->id);
       a->partner = b;
       b->partner = a;
-      a->setRelationshipPeriod(currentDate, shapeRelationshipPeriod,
-                               scaleRelationshipPeriod,
-                               scaleModifierRelationshipPeriod);
-      if (a->relationshipChangeDate == currentDate) ++casualSexEncounters;
       ++a->numPartners;
       ++b->numPartners;
       ++totalPartnerships;
