@@ -600,7 +600,7 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
     }
     if (numSimulations < numThreads) numThreads = numSimulations;
     unsigned simulationsPerThread = numSimulations / numThreads;
-    if (simulationsPerThread * numThreads < numSimulations) ++numThreads;
+    while (simulationsPerThread * numThreads < numSimulations) ++numThreads;
 
     std::vector<std::thread> thread(numThreads);
 
