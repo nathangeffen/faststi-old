@@ -1,6 +1,4 @@
 # Tests on 100k agents
-# Mating pool selection: FREQUENCY, LIMIT, RANDOM
-#
 
 SIMULATION_NAME DATA_BLOSSOM
 

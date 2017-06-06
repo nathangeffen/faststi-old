@@ -42,6 +42,18 @@ lm_singles = by(singles,singles$Num,
 sim_num = as.double(toString(which(lm_singles==min(lm_singles)) 
                              - 1))
 best_parameters_singles_lm = parameters[parameters$Num==sim_num,]
-print("Best singles")
+print("Best singles (lm)")
 print(lm_singles[sim_num+1])
 print(best_parameters_singles_lm)
+
+print("Beginning tests of max-min")
+mm_singles = by(singles,singles$Num, 
+                function(x) {
+                  max(x$Value) - min(x$value)
+                } )
+sim_num = as.double(toString(which(mm_singles==min(mm_singles)) 
+                             - 1))
+best_parameters_singles_mm = parameters[parameters$Num==sim_num,]
+print("Best singles (max - min)")
+print(mm_singles[sim_num+1])
+print(best_parameters_singles_mm)
