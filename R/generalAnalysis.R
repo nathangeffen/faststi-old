@@ -20,5 +20,15 @@ partnerships = partnerships[partnerships$Date==analysisDate,]
 
 meanPartnerships = aggregate(partnerships$Value, by=list(partnerships$Name),
                               FUN=mean)
+
+timings = inp[inp$Desc1=="TIMING",]
+timings = timings[timings$Date==analysisDate,]
+
+meanTimings = aggregate(timings$Value, by=list(timings$Name),
+                             FUN=mean)
+
+
 sprintf("%s,%f", meanPrevalences$Group.1, meanPrevalences$x)
 sprintf("%s,%f", meanPartnerships$Group.1, meanPartnerships$x)
+sprintf("%s,%f", meanTimings$Group.1, meanTimings$x)
+
