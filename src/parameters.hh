@@ -192,8 +192,7 @@ public:
                  "Highest score beyond which a match between two agents fails",
                  {2000.00});
     addParameter("MATCH_SCORE_POOR",
-                 "Score for which a poor match must be registered",
-                 {40.0});
+                 "Score for which a poor match must be registered", {40.0});
 
     addParameter("OUTPUT_AGENTS_INIT",
                  "Print agent info after initialization"

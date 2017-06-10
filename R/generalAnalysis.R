@@ -1,5 +1,18 @@
 library("xtable")
 
+confinterval <- function(vals) {
+  tryCatch(
+    {
+      as.double(quantile(vals,probs=c(0.025,0.975)))
+      # x = t.test(vals)
+      # x$conf.int
+    },
+    error = function(e) {
+      NA
+    }
+  )
+}
+
 confinterval_02_5 <- function(vals) {
   tryCatch(
     {

@@ -1029,6 +1029,15 @@ public:
                    const double score)
   {
     assert(b->partner == NULL);
+    // Deal with discordant casual sex
+    if (a->casualSex != b->casualSex) {
+      std::uniform_real_distribution<double> uni;
+      if (uni(rng) < 0.5) {
+        a->casualSex = b->casualSex = false;
+      } else {
+        a->casualSex = b->casualSex = false;
+      }
+    }
     if (score < failureThresholdScore) {
       if (score > poorThresholdScore) ++poorMatches;
       totalPartnershipScore += score;
