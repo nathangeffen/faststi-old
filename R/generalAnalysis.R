@@ -48,6 +48,14 @@ if (length(args)==0) {
 inp = read.csv(filename, header=TRUE)
 
 prevalences = inp[inp$Desc2=="PREVALENCE",]
+analysisDate = min(prevalences$Date)
+prevalences = prevalences[prevalences$Date==analysisDate,]
+
+meanInitPrevalences = aggregate(prevalences$Value, 
+                                by=list(prevalences$Name),
+                                FUN=mean)
+
+prevalences = inp[inp$Desc2=="PREVALENCE",]
 analysisDate = max(prevalences$Date)
 prevalences = prevalences[prevalences$Date==analysisDate,]
 
@@ -77,6 +85,8 @@ ci_prevalences_97_5 = aggregate(prevalences$Value,
                                 FUN=confinterval_97_5)
 
 
+print("Mean init prevalence")
+sprintf("%s,%f", meanInitPrevalences$Group.1, meanInitPrevalences$x)
 print("Mean prevalence")
 sprintf("%s,%f", meanPrevalences$Group.1, meanPrevalences$x)
 print("0.025 CI prevalence")
@@ -88,6 +98,7 @@ sprintf("%s,%f", meanPartnerships$Group.1, meanPartnerships$x)
 print("Mean timings")
 sprintf("%s,%f", meanTimings$Group.1, meanTimings$x)
 xtable(meanPrevalences)
+xtable(meanInitPrevalences)
 xtable(ci_prevalences_02_5)
 xtable(ci_prevalences_97_5)
 xtable(meanPartnerships)

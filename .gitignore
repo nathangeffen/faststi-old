@@ -8,7 +8,10 @@ faststi
 # ignore test results
 bin/output_*
 output/
-tmp*.csv
+tmp*
+*.gz
+results*
+TabulatedResults.ods
 
 # ignore R session files
 .RData
