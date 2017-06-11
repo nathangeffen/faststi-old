@@ -510,20 +510,20 @@ public:
      are pecularities in this code. It needs to be tidied and perhaps
      optimised.
    */
-  inline void initAgent(Agent *agent,
-                        const unsigned id,
-                        Sample<>& sampleAgeshare,
-                        const std::vector<double>& femRatio,
-                        const std::vector<double>& wswRate,
-                        const std::vector<double>& msmRate,
-                        const std::vector<double>& initialInfectionRatesMSW,
-                        const std::vector<double>& initialInfectionRatesMSM,
-                        const std::vector<double>& initialInfectionRatesWSM,
-                        const std::vector<double>& initialInfectionRatesWSW,
-                        std::vector<Sample<>>& sample_matWW,
-                        std::vector<Sample<>>& sample_matMW,
-                        std::vector<Sample<>>& sample_matWM,
-                        std::vector<Sample<>>& sample_matMM)
+  void initAgent(Agent *agent,
+                 const unsigned id,
+                 Sample<>& sampleAgeshare,
+                 const std::vector<double>& femRatio,
+                 const std::vector<double>& wswRate,
+                 const std::vector<double>& msmRate,
+                 const std::vector<double>& initialInfectionRatesMSW,
+                 const std::vector<double>& initialInfectionRatesMSM,
+                 const std::vector<double>& initialInfectionRatesWSM,
+                 const std::vector<double>& initialInfectionRatesWSW,
+                 std::vector<Sample<>>& sample_matWW,
+                 std::vector<Sample<>>& sample_matMW,
+                 std::vector<Sample<>>& sample_matWM,
+                 std::vector<Sample<>>& sample_matMM)
   {
     std::uniform_real_distribution<double> uni;
 
