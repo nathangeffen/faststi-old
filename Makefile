@@ -1,6 +1,6 @@
 # the compiler: gcc for C program, define as g++ for C++
 ifeq ($(shell uname),Darwin)
-	CXX = g++-6
+	CXX = g++-7
 else
 	CXX = g++
 endif
