@@ -4,6 +4,7 @@ bin/blossom5
 bin/*.o
 bin/faststi.dSYM/
 faststi
+blossom5
 
 # ignore test results
 bin/output_*
@@ -39,3 +40,6 @@ bv_*
 # ignore analysis output (add csv and pdf files explicitly)
 *.pdf
 *.csv
+
+# ignore Mac cruft
+.DS_Store
