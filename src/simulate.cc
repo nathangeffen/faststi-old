@@ -229,7 +229,7 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
   std::normal_distribution<double> norm(mean, sd);
   size_t breakups = std::min( (size_t) std::max(0.0, norm(rng)),
                               partners.size());
-
+  std::cout << "D0: " << breakups << " " << partners.size() << std::endl;
   nth_element(partners.begin(), partners.begin() + breakups, partners.end(),
               [](const Agent *a, const Agent *b)
               {
