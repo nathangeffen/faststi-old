@@ -209,7 +209,7 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
   // have a lower id than their partner
   for (auto& agent: simulation->agents) {
     if (agent->partner && agent->id < agent->partner->id) {
-      if (agent->casualSex == true || agent->partner->casualSex == true) {
+      if (agent->casualSex == true) { // Can assume partner always has same value for this
         agent->weight = -1;
       } else {
         size_t index = std::min( (size_t) agent->age - MIN_AGE,
@@ -237,8 +237,11 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
 
   for (auto it = partners.begin(); it < partners.begin() + breakups; ++it) {
     auto agent = *it;
-    agent->casualSex = false;
-    agent->partner->casualSex = false;
+    if (agent->casualSex) {
+      agent->casualSex = false;
+      agent->partner->casualSex = false;
+      ++simulation->casualSexEncounters;
+    }
     agent->partner->partner = NULL;
     agent->partner = NULL;
   }

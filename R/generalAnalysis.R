@@ -74,6 +74,11 @@ timings = timings[timings$Date==analysisDate,]
 meanTimings = aggregate(timings$Value, by=list(timings$Name),
                              FUN=mean)
 
+casual = inp[inp$Desc2=="CASUAL",]
+casual = casual[casual$Date==analysisDate,]
+meanCasual = aggregate(casual$Value, by=list(casual$Name),
+                       FUN=mean)
+
 poor = inp[inp$Desc2=="POOR",]
 poor = poor[poor$Date==analysisDate,]
 
@@ -102,6 +107,8 @@ print("0.0975 CI prevalence")
 sprintf("%s,%f", ci_prevalences_97_5$Group.1, ci_prevalences_97_5$x)
 print("Mean partnerships")
 sprintf("%s,%f", meanPartnerships$Group.1, meanPartnerships$x)
+print("Mean casual")
+sprintf("%s,%f", meanCasual$Group.1, meanCasual$x)
 print("Mean poor")
 sprintf("%s,%f", meanPoor$Group.1, meanPoor$x)
 print("Mean timings")
@@ -111,4 +118,5 @@ xtable(meanInitPrevalences)
 xtable(ci_prevalences_02_5)
 xtable(ci_prevalences_97_5)
 xtable(meanPartnerships)
+xtable(meanPoor)
 xtable(meanTimings)

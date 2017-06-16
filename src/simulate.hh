@@ -1035,7 +1035,7 @@ public:
       if (uni(rng) < 0.5) {
         a->casualSex = b->casualSex = false;
       } else {
-        a->casualSex = b->casualSex = false;
+        a->casualSex = b->casualSex = true;
       }
     }
     if (score < failureThresholdScore) {
