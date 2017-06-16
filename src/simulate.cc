@@ -220,8 +220,8 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
         double prob2 = simulation->breakupProb[index][1 + agent->partner->sex];
         double prob = (prob1 + prob2) / 2.0;
         agent->weight = uni(rng) - prob;
-        partners.push_back(agent);
       }
+      partners.push_back(agent);
     }
   }
   double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
@@ -229,7 +229,6 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
   std::normal_distribution<double> norm(mean, sd);
   size_t breakups = std::min( (size_t) std::max(0.0, norm(rng)),
                               partners.size());
-  std::cout << "D0: " << breakups << " " << partners.size() << std::endl;
   nth_element(partners.begin(), partners.begin() + breakups, partners.end(),
               [](const Agent *a, const Agent *b)
               {
