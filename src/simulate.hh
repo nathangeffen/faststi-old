@@ -121,6 +121,7 @@ public:
   double totalPartnershipScore = 0.0;
 
   unsigned stabilizationSteps;
+  unsigned inStabilizationPeriod = false;
   unsigned clusters;
   unsigned neighbors;
   unsigned totalBreakups = 0;
@@ -182,6 +183,7 @@ public:
     endDate = parameterMap.at("END_DATE").dbl();
     timeStep = parameterMap.at("TIME_STEP").dbl();
     stabilizationSteps = parameterMap.at("STABILIZATION_STEPS").dbl();
+    if (stabilizationSteps > 0) inStabilizationPeriod = true;
     currentDate = startDate - (double) stabilizationSteps * timeStep;
     failureThresholdScore = parameterMap.at("MATCH_SCORE_FAIL").dbl();
     poorThresholdScore = parameterMap.at("MATCH_SCORE_POOR").dbl();
@@ -366,6 +368,7 @@ public:
         printAgents(agents, simulationNum, currentDate);
       }
       if ( stabilizationSteps > 0 && stabilizationSteps == i) {
+        inStabilizationPeriod = false;
         if (analyzeAfterStabilization) analysis(true, true, true, analyzeTruncatedAgeInit,
                                                 analyzeSinglesInit);
         if (outputAgentsAfterStabilization) {
@@ -425,6 +428,7 @@ public:
     DblMatrix ww = matrixFromCSV("WSW_DATA_CSV", ";", false);
     DblMatrix mw = matrixFromCSV("MSW_DATA_CSV", ";", false);
     DblMatrix wm = matrixFromCSV("WSM_DATA_CSV", ";", false);
+    double scaleInitialSingle = parameterMap.at("SCALE_INITIAL_SINGLE").dbl();
 
     size_t rows = maxAge - MIN_AGE;
     truncateMatrix(demographics,maxAge, 7);
@@ -461,7 +465,8 @@ public:
 
     // Calculate number of agents in relationships and number that are single
     unsigned X = parameterMap.at("NUM_AGENTS").values[0];
-    unsigned S = calcNumberSingles(demographics, X);
+    unsigned S = std::min( (unsigned) (calcNumberSingles(demographics, X)
+                                       * scaleInitialSingle), X);
     agents.reserve(X);
 
     // Get age structure, sex & sexual orientation information for single agents

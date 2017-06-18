@@ -97,7 +97,7 @@ void setInitialInfection(Agent &agent,
 
 void ageEvent(Simulation* simulation)
 {
-  if ( (simulation->currentDate + EPSILON)  >= simulation->startDate) {
+  if ( (simulation->inStabilizationPeriod == false) ) {
     for (auto& agent : simulation->agents) {
       agent->age += simulation->timeStep;
     }
@@ -106,31 +106,34 @@ void ageEvent(Simulation* simulation)
 
 void infectEvent(Simulation* simulation)
 {
-  std::uniform_real_distribution<double> dist(0.0, 1.0);
-  for (auto& agent: simulation->agents) {
-    if (agent->partner && agent->infected == false &&
-        agent->partner->infected == true) {
-      double risk_infection;
+  if ( simulation->inStabilizationPeriod == false) {
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
 
-      if (agent->partner->sex == agent->sex) {
-        if (agent->sex == MALE) {
-          risk_infection = simulation->homMaleInfectiousness;
-        } else {
-          risk_infection = simulation->homFemaleInfectiousness;
-        }
-      } else {
-        if (agent->sex == MALE) {
-          risk_infection = simulation->hetFemaleInfectiousness;
-        } else {
-          risk_infection = simulation->hetMaleInfectiousness;
-        }
-      }
+    for (auto& agent: simulation->agents) {
+      if (agent->partner && agent->infected == false &&
+          agent->partner->infected == true) {
+        double risk_infection;
 
-      if (dist(rng) < risk_infection) {
-        agent->infected = true;
-        agent->infector = agent->partner;
-        ++agent->partner->numInfected;
-        simulation->trackRiskFactors(agent);
+        if (agent->partner->sex == agent->sex) {
+          if (agent->sex == MALE) {
+            risk_infection = simulation->homMaleInfectiousness;
+          } else {
+            risk_infection = simulation->homFemaleInfectiousness;
+          }
+        } else {
+          if (agent->sex == MALE) {
+            risk_infection = simulation->hetFemaleInfectiousness;
+          } else {
+            risk_infection = simulation->hetMaleInfectiousness;
+          }
+        }
+
+        if (dist(rng) < risk_infection) {
+          agent->infected = true;
+          agent->infector = agent->partner;
+          ++agent->partner->numInfected;
+          simulation->trackRiskFactors(agent);
+        }
       }
     }
   }

@@ -321,6 +321,8 @@ public:
                  "Standard deviation rate of mean number of partnerships",{0.1});
 
     // Parameters that may need to be fitted
+    addParameter("SCALE_INITIAL_SINGLE",
+                 "Scale proportion of single agents at initialization", {1.0});
     addParameter("SCALE_SINGLE_PROB",
                  "Multiply single period probabilities this", {1.0});
     addParameter("SCALE_RELATIONSHIP_PROB",
