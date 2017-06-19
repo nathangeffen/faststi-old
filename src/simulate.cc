@@ -97,7 +97,7 @@ void setInitialInfection(Agent &agent,
 
 void ageEvent(Simulation* simulation)
 {
-  if ( (simulation->currentDate + EPSILON)  >= simulation->startDate) {
+  if ( (simulation->inStabilizationPeriod == false) ) {
     for (auto& agent : simulation->agents) {
       agent->age += simulation->timeStep;
     }
@@ -106,31 +106,34 @@ void ageEvent(Simulation* simulation)
 
 void infectEvent(Simulation* simulation)
 {
-  std::uniform_real_distribution<double> dist(0.0, 1.0);
-  for (auto& agent: simulation->agents) {
-    if (agent->partner && agent->infected == false &&
-        agent->partner->infected == true) {
-      double risk_infection;
+  if ( simulation->inStabilizationPeriod == false) {
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
 
-      if (agent->partner->sex == agent->sex) {
-        if (agent->sex == MALE) {
-          risk_infection = simulation->homMaleInfectiousness;
-        } else {
-          risk_infection = simulation->homFemaleInfectiousness;
-        }
-      } else {
-        if (agent->sex == MALE) {
-          risk_infection = simulation->hetFemaleInfectiousness;
-        } else {
-          risk_infection = simulation->hetMaleInfectiousness;
-        }
-      }
+    for (auto& agent: simulation->agents) {
+      if (agent->partner && agent->infected == false &&
+          agent->partner->infected == true) {
+        double risk_infection;
 
-      if (dist(rng) < risk_infection) {
-        agent->infected = true;
-        agent->infector = agent->partner;
-        ++agent->partner->numInfected;
-        simulation->trackRiskFactors(agent);
+        if (agent->partner->sex == agent->sex) {
+          if (agent->sex == MALE) {
+            risk_infection = simulation->homMaleInfectiousness;
+          } else {
+            risk_infection = simulation->homFemaleInfectiousness;
+          }
+        } else {
+          if (agent->sex == MALE) {
+            risk_infection = simulation->hetFemaleInfectiousness;
+          } else {
+            risk_infection = simulation->hetMaleInfectiousness;
+          }
+        }
+
+        if (dist(rng) < risk_infection) {
+          agent->infected = true;
+          agent->infector = agent->partner;
+          ++agent->partner->numInfected;
+          simulation->trackRiskFactors(agent);
+        }
       }
     }
   }
@@ -209,7 +212,7 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
   // have a lower id than their partner
   for (auto& agent: simulation->agents) {
     if (agent->partner && agent->id < agent->partner->id) {
-      if (agent->casualSex == true || agent->partner->casualSex == true) {
+      if (agent->casualSex == true) { // Can assume partner always has same value for this
         agent->weight = -1;
       } else {
         size_t index = std::min( (size_t) agent->age - MIN_AGE,
@@ -220,8 +223,8 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
         double prob2 = simulation->breakupProb[index][1 + agent->partner->sex];
         double prob = (prob1 + prob2) / 2.0;
         agent->weight = uni(rng) - prob;
-        partners.push_back(agent);
       }
+      partners.push_back(agent);
     }
   }
   double mean = simulation->meanRatePairsTimeStep * simulation->agents.size();
@@ -229,7 +232,6 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
   std::normal_distribution<double> norm(mean, sd);
   size_t breakups = std::min( (size_t) std::max(0.0, norm(rng)),
                               partners.size());
-
   nth_element(partners.begin(), partners.begin() + breakups, partners.end(),
               [](const Agent *a, const Agent *b)
               {
@@ -238,8 +240,11 @@ void limitFrequencyBreakupEvent(Simulation *simulation)
 
   for (auto it = partners.begin(); it < partners.begin() + breakups; ++it) {
     auto agent = *it;
-    agent->casualSex = false;
-    agent->partner->casualSex = false;
+    if (agent->casualSex) {
+      agent->casualSex = false;
+      agent->partner->casualSex = false;
+      ++simulation->casualSexEncounters;
+    }
     agent->partner->partner = NULL;
     agent->partner = NULL;
   }

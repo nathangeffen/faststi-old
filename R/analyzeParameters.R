@@ -2,6 +2,10 @@ inp = read.csv("tmp1.csv", TRUE)
 singles = inp[inp$Desc2=="SINGLES",]
 singles$Date = as.double(singles$Date)
 singles$Value = as.double(singles$Value)
+print("Singles - min, max")
+print(min(singles$Value))
+print(max(singles$Value))
+print(max(singles$Value) - min(singles$Value))
 lm(singles$Value~singles$Date)
 matings = inp[inp$Desc1=="MATINGPOOL",]
 matings$Date = as.double(matings$Date)

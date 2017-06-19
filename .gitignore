@@ -12,7 +12,7 @@ output/
 tmp*
 *.gz
 results*
-TabulatedResults.ods
+TabulatedResults*.ods
 
 # ignore R session files
 .RData

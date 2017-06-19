@@ -1,5 +1,3 @@
-library("xtable")
-
 confinterval <- function(vals) {
   tryCatch(
     {
@@ -36,6 +34,39 @@ confinterval_97_5 <- function(vals) {
 }
 
 
+analyzeVar <- function(varName, analysisDate, description, descField, input)
+{
+  if(missing(analysisDate)) {analysisDate = 1}
+  if(missing(description)) {description = varName}
+  if(missing(descField)) {descField = 2}
+  if(missing(input)) {input = inp}
+  if (descField == 1) {
+    values = input[input$Desc1==varName,]
+  } else {
+    values = input[input$Desc2==varName,]
+  }
+  if (nrow(values) == 0) {return(0)}
+  if (analysisDate == 1) {
+    analysisDate = max(values$Date)
+  } else {
+    analysisDate = min(values$Date)
+  }
+  values = values[values$Date==analysisDate,]    
+  meanValues = aggregate(values$Value, 
+                         by=list(values$Name),
+                         FUN=mean)
+  ci_02_5 = aggregate(values$Value,
+                      by=list(values$Name),
+                      FUN=confinterval_02_5)
+  ci_97_5 = aggregate(values$Value,
+                      by=list(values$Name),
+                      FUN=confinterval_97_5)
+  
+  sprintf("%s %s: %.3f [%.3f;%.3f]", meanValues$Group.1, description, meanValues$x,
+          ci_02_5$x,ci_97_5$x)
+}
+
+
 
 args = commandArgs(trailingOnly=TRUE)
 
@@ -47,59 +78,18 @@ if (length(args)==0) {
 
 inp = read.csv(filename, header=TRUE)
 
-prevalences = inp[inp$Desc2=="PREVALENCE",]
-analysisDate = min(prevalences$Date)
-prevalences = prevalences[prevalences$Date==analysisDate,]
-
-meanInitPrevalences = aggregate(prevalences$Value, 
-                                by=list(prevalences$Name),
-                                FUN=mean)
-
-prevalences = inp[inp$Desc2=="PREVALENCE",]
-analysisDate = max(prevalences$Date)
-prevalences = prevalences[prevalences$Date==analysisDate,]
-
-meanPrevalences = aggregate(prevalences$Value, by=list(prevalences$Name),
-                    FUN=mean)
-
-partnerships = inp[inp$Desc2=="PARTNERSHIPS",]
-partnerships = partnerships[partnerships$Date==analysisDate,]
-
-meanPartnerships = aggregate(partnerships$Value, by=list(partnerships$Name),
-                              FUN=mean)
-
-timings = inp[inp$Desc1=="TIMING",]
-timings = timings[timings$Date==analysisDate,]
-
-meanTimings = aggregate(timings$Value, by=list(timings$Name),
-                             FUN=mean)
-
-
-ci_prevalences_02_5 = aggregate(prevalences$Value,
-                                by=list(prevalences$Name,
-                                        prevalences$Desc2),
-                                FUN=confinterval_02_5)
-ci_prevalences_97_5 = aggregate(prevalences$Value,
-                                by=list(prevalences$Name,
-                                        prevalences$Desc2),
-                                FUN=confinterval_97_5)
-
-
-print("Mean init prevalence")
-sprintf("%s,%f", meanInitPrevalences$Group.1, meanInitPrevalences$x)
-print("Mean prevalence")
-sprintf("%s,%f", meanPrevalences$Group.1, meanPrevalences$x)
-print("0.025 CI prevalence")
-sprintf("%s,%f", ci_prevalences_02_5$Group.1, ci_prevalences_02_5$x)
-print("0.0975 CI prevalence")
-sprintf("%s,%f", ci_prevalences_97_5$Group.1, ci_prevalences_97_5$x)
-print("Mean partnerships")
-sprintf("%s,%f", meanPartnerships$Group.1, meanPartnerships$x)
-print("Mean timings")
-sprintf("%s,%f", meanTimings$Group.1, meanTimings$x)
-xtable(meanPrevalences)
-xtable(meanInitPrevalences)
-xtable(ci_prevalences_02_5)
-xtable(ci_prevalences_97_5)
-xtable(meanPartnerships)
-xtable(meanTimings)
+analyzeVar("PREVALENCE", 0, "INITIAL PREVALENCE")
+analyzeVar("PREVALENCE", description="FINAL PREVALENCE")
+analyzeVar("AGE_RANGE_PREVALENCE", 0, "INITIAL PREVALENCE 15-50")
+analyzeVar("AGE_RANGE_PREVALENCE", 1, "FINAL PREVALENCE 18-53")
+analyzeVar("FEMALE_PREVALENCE_AGE_25-29", 0, "INITIAL FEMALE_PREVALENCE_AGE_25-29")
+analyzeVar("FEMALE_PREVALENCE_AGE_25-29", description="FINAL FEMALE_PREVALENCE_AGE_25-29")
+analyzeVar("MSM_PREVALENCE",0,"INITIAL MSM PREVALENCE")
+analyzeVar("MSM_PREVALENCE", description="FINAL MSM PREVALENCE")
+analyzeVar("PARTNERSHIPS", 0, "INITIAL PARTNERSHIPS")
+analyzeVar("PARTNERSHIPS", description="FINAL PARTNERSHIPS")
+analyzeVar("CASUAL")
+analyzeVar("POOR")
+analyzeVar("SINGLES", 0, "INITIAL SINGLES")
+analyzeVar("SINGLES", description="FINAL SINGLES")
+analyzeVar("TIMING", descField = 1)
