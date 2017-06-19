@@ -1,0 +1,138 @@
+---
+title: "faststi Calibration"
+output: html_notebook
+---
+
+# General set-up
+
+```{r "setup", include=FALSE}
+knitr::opts_knit$set(root.dir = "~/dev/faststi")
+library(tidyverse)
+library(ggplot2)
+```
+
+Let's set up a function to create the parameter file for faststi, using
+specified initial prevalences and infection probability parameters:
+
+```{r}
+initial_prevs <- function(msw_1550 = 0.01,
+                          msm_1550 = 0.01,
+                          wsm_1550 = 0.01,
+                          wsw_1550 = 0.01) {
+  return(as.list(environment()))
+}
+
+infection_parms <- function(inf_msw = 0.1,
+                            inf_msm = 0.2,
+                            inf_wsm = 0.05,
+                            inf_wsw = 0.05) {
+  return(as.list(environment()))
+}
+
+write_input <- function(name = "RTEST_", 
+                        n_simulations = 100, 
+                        n_agents = 10000, 
+                        start_date = 2015, 
+                        end_date = 2020,
+                        analysis_step_days = 365,
+                        n_threads = 4,
+                        match_event = "CSPM", # CSPM / RKPM / BLOSSOMV
+                        match_neighbours = 10,
+                        match_clusters = 5,
+                        prevs = initial_prevs(),
+                        parms = infection_parms()) {
+  # Write initial rates to file
+  with(prevs, {
+    initial_rates <- data.frame(AGE = c(14,19,24,29,34,39,44,49,100), # 14 - everyone up to 14.99999, 19 = 15-19.9999
+                                MSW = c(0, rep(msw_1550,7), 0),
+                                MSM = c(0, rep(msw_1550,7), 0),
+                                WSM = c(0, rep(wsm_1550,7), 0),
+                                WSW = c(0, rep(wsw_1550,7), 0))
+    write.csv(initial_rates, "InitialRates.csv", row.names = FALSE, quote = FALSE)
+  })
+  # Write parameters to file
+  with(parms, {
+    lines <- ""
+    simulation_name <- paste0(name, toString(inf_msw))
+    line <- sprintf("SIMULATION_NAME %s\n", simulation_name)
+    lines <- paste0(lines, line)
+    lines <- paste0(lines, "NUM_SIMULATIONS ", n_simulations, "\n")
+    lines <- paste0(lines, "NUM_AGENTS ", n_agents, "\n")
+    lines <- paste0(lines, "NUM_THREADS ", n_threads, "\n")
+    lines <- paste0(lines, "START_DATE ", start_date, "\nEND_DATE ", end_date, "\n")
+    lines <- paste0(lines, "MATCH_EVENT ", match_event, "\n")
+    lines <- paste0(lines, "MATCH_NEIGHBORS ",match_neighbours, "\n") # 
+    lines <- paste0(lines, "MATCH_CLUSTERS ", match_clusters, "\n") #
+    lines <- paste0(lines, "ANALYZE_DURING_SIM ", analysis_step_days, "\n")
+    lines <- paste0(lines, "HET_MALE_INFECTIOUSNESS ", inf_msw, "\n")
+    lines <- paste0(lines, "HOM_MALE_INFECTIOUSNESS ", inf_msm, "\n")
+    lines <- paste0(lines, "HET_FEMALE_INFECTIOUSNESS ", inf_wsm, "\n")
+    lines <- paste0(lines, "HOM_FEMALE_INFECTIOUSNESS ", inf_wsw, "\n")
+    lines <- paste0(lines, "BREAKUP_EVENT LIMIT\nMATING_POOL_EVENT LIMIT\n")
+    lines <- paste0(lines, "INITIAL_INFECTION_RATES_CSV InitialRates.csv")
+    write(lines, file="FaststiInput.txt")
+  })
+}
+
+```
+
+Now let's set up a function that runs the simulation the specified number of times
+(with true stochasticity or a specified seed.
+
+```{r}
+faststi_simulation <- function(seed = 123, param.set) {
+  # This is an ugly workaround for the fact that EasyABC only allows parameters
+  # for which priors are set
+  fixed <- get("fixed_params",env=globalenv())
+  
+  with(fixed, {
+    write_input(n_simulations = n_simulations,
+                n_agents = 10000,
+                start_date = start_date,
+                end_date = end_date,
+                prevs = prevs,
+                parms = infection_parms(inf_msw = param.set[1],
+                                        inf_msm = param.set[2],
+                                        inf_wsm = param.set[3],
+                                        inf_wsw = param.set[4]))
+  })
+  #time <- toString(lubridate::now())
+  #outfilename <- paste0("FaststiOutput_",gsub(" ","_",gsub(":","-",time)),".csv")
+  outfilename <- "FaststiOutput.csv"
+  cmd = sprintf("./faststi -s %i -f %s >%s", seed, "FaststiInput.txt", outfilename)
+  system(cmd)
+  results <- read.csv(outfilename, TRUE)
+  final_prevalences <- dplyr::filter(results, Desc2 == "PREVALENCE", Date == max(Date))
+  mean_final_prevalence = mean(final_prevalences$Value)
+  sd_final_prevalence = sd(final_prevalences$Value)
+  browser()  
+  years <- unique(results$Date)[3:length(unique(results$Date))-1]
+    mean_prevs <- vector(length = length(years))
+    for (i in 1:length(years)) {
+      mean_prevs[i] <- mean(dplyr::filter(results, Desc2 == "PREVALENCE", Date == years[i])$Value)
+    } 
+  print(paste0("Mean final prevlances: ", mean_final_prevalence))
+  print(paste0("SD final prevlances: ", sd_final_prevalence))
+  return(mean_prevs)
+}
+```
+
+Now let's test it with 64 runs (4 threads), using a seed value and default
+parameter values:
+
+```{r}
+fixed_params <-  list(n_simulations = 64,
+                      n_threads = 4,
+                      start_date = 2015,
+                      end_date = 2020,
+                      prevs = initial_prevs())
+true_params <- unlist(infection_parms())
+sim.output <- faststi_simulation(seed = 124, param.set = true_params)
+print(sim.output)
+```
+
+Now, let's simulate a dataset from these values:
+
+```{r}
+
+```
