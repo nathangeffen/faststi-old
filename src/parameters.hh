@@ -241,6 +241,9 @@ public:
                  "Output time every x iterations", {0});
     addParameter("OUTPUT_TIMING_AFTER",
                  "Output time every x iterations", {1});
+
+    addParameter("AGENT_INITIAL_FILE",
+                 "File of agents for initialization (blank for built-in method)", "");
     addParameter("AGENT_DATA_CSV",
                  "Agent data for initialization", "data/data.csv");
     addParameter("SINGLES_DATA_CSV",
