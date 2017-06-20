@@ -24,6 +24,9 @@ outputFromFaststi.csv
 tmp*
 bestParmsInitial.csv
 finalFittedParms.txt
+FaststiInput.txt
+FaststiOutput.csv
+*.nb.html
 
 
 # ignore backup and swap files created by Emacs and VIM
