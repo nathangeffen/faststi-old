@@ -324,8 +324,9 @@ public:
                  "Standard deviation rate of mean number of partnerships",{0.1});
 
     // Parameters that may need to be fitted
-    addParameter("SCALE_INITIAL_SINGLE",
-                 "Scale proportion of single agents at initialization", {1.0});
+    addParameter("PROPORTION_INITIAL_SINGLE",
+                 "Scale proportion of single agents at initialization "
+                 "(values < 0, which is default, ignored)", {-1.0});
     addParameter("SCALE_SINGLE_PROB",
                  "Multiply single period probabilities this", {1.0});
     addParameter("SCALE_RELATIONSHIP_PROB",
@@ -348,6 +349,11 @@ public:
                  "Mean factored difference from likelihood of casual sex",{1.0});
     addParameter("SD_CASUAL_SEX",
                  "Standard deviation from likelihood of casual sex", {0.0});
+
+    addParameter("SYSTEM_COMMAND_BEFORE",
+                 "Command to be executed before simulation runs","");
+    addParameter("SYSTEM_COMMAND_AFTER",
+                 "Command to be executed after simulation runs","");
 
     // DEBUGGING - IGNORED IN RELEASE MODE
 
@@ -456,7 +462,14 @@ public:
       throw UnknownParameter(name);
     }
     if (this->at(name).isString) {
-      line >> (*this)[name].strValue;
+      std::string s, finalstring;
+
+      while (line >> s) {
+        finalstring += s;
+        finalstring += " ";
+      }
+      boost::trim(finalstring);
+      (*this)[name].strValue = finalstring;
     } else {
       double value;
       std::vector<double> values;

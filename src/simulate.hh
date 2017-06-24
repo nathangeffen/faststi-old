@@ -323,6 +323,12 @@ public:
 
     struct timeval timeBegin, timeEnd;
     double elapsedTime;
+    std::string systemBefore = parameterMap.at("SYSTEM_COMMAND_BEFORE").str();
+    if (systemBefore != "") {
+      if (system(systemBefore.c_str()) != 0) {
+        std::cerr << "Error returned from SYSTEM_COMMAND_BEFORE.";
+      }
+    };
 
     gettimeofday(&timeBegin, NULL);
     if (initAgents) initializeAgents();
@@ -392,6 +398,12 @@ public:
     if ( (unsigned) parameterMap.at("ANALYZE_AFTER").isSet()) {
       analysis(true, true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter);
     }
+    std::string systemAfter = parameterMap.at("SYSTEM_COMMAND_BEFORE").str();
+    if (systemAfter != "") {
+      if (system(systemAfter.c_str()) != 0) {
+        std::cerr << "Error returned from SYSTEM_COMMAND_AFTER.";
+      }
+    }
   }
 
   /**
@@ -428,7 +440,7 @@ public:
     DblMatrix ww = matrixFromCSV("WSW_DATA_CSV", ";", false);
     DblMatrix mw = matrixFromCSV("MSW_DATA_CSV", ";", false);
     DblMatrix wm = matrixFromCSV("WSM_DATA_CSV", ";", false);
-    double scaleInitialSingle = parameterMap.at("SCALE_INITIAL_SINGLE").dbl();
+    double proportionInitialSingle = parameterMap.at("PROPORTION_INITIAL_SINGLE").dbl();
 
     size_t rows = maxAge - MIN_AGE;
     truncateMatrix(demographics,maxAge, 7);
@@ -465,8 +477,12 @@ public:
 
     // Calculate number of agents in relationships and number that are single
     unsigned X = parameterMap.at("NUM_AGENTS").values[0];
-    unsigned S = std::min( (unsigned) (calcNumberSingles(demographics, X)
-                                       * scaleInitialSingle), X);
+    unsigned S;
+    if (proportionInitialSingle < 0.0) {
+      S = calcNumberSingles(demographics, X);
+    } else {
+      S = std::min( (unsigned) (proportionInitialSingle * X), X);
+    }
     agents.reserve(X);
 
     // Get age structure, sex & sexual orientation information for single agents

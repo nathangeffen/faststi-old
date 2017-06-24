@@ -596,7 +596,6 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
     // Needed for parameter printing
     unsigned parmPrint = (unsigned) parameterMap.at("PRINT_PARAMETERS").dbl();
 
-
     // Organise threads
     unsigned numThreads = parameterMap.at("NUM_THREADS").dbl();
     if (numThreads == 0) {
@@ -613,8 +612,7 @@ void execSimulationSet(std::vector<ParameterMap> parameterMaps,
 
     for (unsigned i = 0; i < numThreads; ++i) {
       unsigned simulationFrom = i * simulationsPerThread;
-      unsigned simulationTo = std::min( (i + 1) * simulationsPerThread,
-                                        numSimulations);
+      unsigned simulationTo = std::min( (i + 1) * simulationsPerThread, numSimulations);
       thread[i] = std::thread(callSimulation, parameterMap,
                               std::ref(symbolTable), parmPrint,
                               simulationFrom, simulationTo);
