@@ -33,7 +33,6 @@ confinterval_97_5 <- function(vals) {
   )
 }
 
-
 analyzeVar <- function(varName, analysisDate, description, descField, input)
 {
   if(missing(analysisDate)) {analysisDate = 1}
@@ -62,8 +61,13 @@ analyzeVar <- function(varName, analysisDate, description, descField, input)
                       by=list(values$Name),
                       FUN=confinterval_97_5)
   
-  sprintf("%s %s: %.3f [%.3f;%.3f]", meanValues$Group.1, description, meanValues$x,
-          ci_02_5$x,ci_97_5$x)
+  #newrow = c(meanValues$Group.1[1], description[1], 
+  #           as.double(meanValues$x[1]), as.double(ci_02_5$x[1]), as.double(ci_97_5$x[1]))
+  #print(newrow)
+  #df <- rbind(df, newrow)
+
+  print(sprintf("%s,%s,%.3f,%.3f,%.3f", meanValues$Group.1, description, meanValues$x,
+          ci_02_5$x,ci_97_5$x), quote=FALSE)
 }
 
 
@@ -77,6 +81,8 @@ if (length(args)==0) {
 }
 
 inp = read.csv(filename, header=TRUE)
+
+
 
 analyzeVar("PREVALENCE", 0, "INITIAL PREVALENCE")
 analyzeVar("PREVALENCE", description="FINAL PREVALENCE")
