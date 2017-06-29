@@ -1,0 +1,2 @@
+Number of minutes to run with 40m agents, 60 day stabilisation, 3 years, frequency, cspm
+(default neighbors and clusters): 170 minutes.
