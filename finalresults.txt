@@ -1,2 +1,28 @@
 Number of minutes to run with 40m agents, 60 day stabilisation, 3 years, frequency, cspm
 (default neighbors and clusters): 170 minutes.
+
+With partner tracking off, time to run 40 million agents, 60 days stabilization,
+2017-27, frequency, cspm, (default neighbors and clusters): 210 minutes (50.7k
+agents per second). Final prevalence: 0.217 This was the parameter file:
+       NUM_AGENTS 40000000
+       NUM_SIMULATIONS 1
+       NUM_THREADS 1
+       PRINT_PARAMETERS 1
+       INITIAL_INFECTION_RATES_CSV data/initial_rates_young_msm.csv
+       STABILIZATION_STEPS 60
+       START_DATE 2017
+       END_DATE 2027
+       OUTPUT_NUM_MATINGPOOL 1
+       OUTPUT_NUM_BREAKUPS 1
+       ANALYZE_DURING_SIM 10
+       DISTANCE_METHOD TABLE
+       HET_MALE_INFECTIOUSNESS 0.2
+       HET_FEMALE_INFECTIOUSNESS 0.1
+       HOM_MALE_INFECTIOUSNESS 0.2
+       HOM_FEMALE_INFECTIOUSNESS 0.1
+       TRACK_PARTNERS 0
+       SIMULATION_NAME CSPM_0_1
+       MATCH_EVENT CSPM
+
+Cf. 100k and 1m runs:
+The results for the simulation run with 20,000 agents show an increasing prevalence from the more sophisticated to the more random matching algorithms (BlossomV 0.567 [95%CI 0.549-0.586], BFPM 0.597 [0.581-0.612], CSPM 0.589 [0.568-0.609], RKPM 0.619 [0.592-0.631], RPM 0.636 [0.617-0.656]). For the simulation runs with 1 million agents, the final population prevalence is highest when using the RPM algorithm with 0.637 [0.634-0.640; average runtime 1,116 seconds], followed by the RKPM with a prevalence rate of 0.614 [0.612-0.616; 1,156s]. CSPM and BFPM show much lower prevalence of 0.514 [0.509-0.519; 1,168s] and 0.533 [0.524-0.539; 18,772s], respectively.
