@@ -114,6 +114,7 @@ public:
   bool analyzeSinglesDuring = false;
   bool analyzeSinglesAfter = false;
   bool incTruncatedAge = false;
+  bool trackPartners;
 
   double currentDate;
   double failureThresholdScore;
@@ -275,6 +276,7 @@ public:
       throw std::runtime_error ("Unknown distance method");
     }
 
+    trackPartners = (bool) parameterMap.at("TRACK_PARTNERS").dbl();
     size_t max_p = (size_t) parameterMap.at("PARTNERS_RESERVE").dbl();
     if (max_p > 0) partnerships.partnerships.reserve(max_p);
     auto lf = parameterMap.at("PARTNERS_LOAD_FACTOR").dbl();
@@ -1062,7 +1064,7 @@ public:
     if (score < failureThresholdScore) {
       if (score > poorThresholdScore) ++poorMatches;
       totalPartnershipScore += score;
-      partnerships.insert(a->id, b->id);
+      if (trackPartners) partnerships.insert(a->id, b->id);
       a->partner = b;
       b->partner = a;
       ++a->numPartners;
@@ -1116,7 +1118,7 @@ public:
     } else if (a->sex != b->sex) {
       score += 50.0;
     }
-    if (partnerships.exists(a->id, b->id)) score += 50.0;
+    if (trackPartners && partnerships.exists(a->id, b->id)) score += 50.0;
     if (a->casualSex != b->casualSex) score += 40.0;
 
     return score;
@@ -1158,7 +1160,7 @@ public:
       score += 50.0;
     }
 
-    if (partnerships.exists(a->id, b->id))
+    if (trackPartners && partnerships.exists(a->id, b->id))
       score += 50.0;
     if (a->casualSex != b->casualSex) score += 40.0;
 

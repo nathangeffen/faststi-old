@@ -294,6 +294,7 @@ public:
     addParameter("DISTANCE_METHOD",
                  "Distance calculation to use (HEURISTIC,TABLE)", "HEURISTIC");
 
+    addParameter("TRACK_PARTNERS", "Track partnerships", {1});
     addParameter("PARTNERS_LOAD_FACTOR",
                  "Load factor for partnerships unordered set (advanced)", {0});
     addParameter("PARTNERS_RESERVE",

@@ -62,7 +62,7 @@ public:
 
      @param id1[in] ID of one of the agents in the partnership
      @param id2[in] ID of the other agent in the partnership
-   */
+  */
   void insert(const uint32_t id1, const uint32_t id2)
   {
     partnerships.insert(combine(id1, id2));
