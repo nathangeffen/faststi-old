@@ -2,6 +2,7 @@
 #define COMMON_HH
 
 #include <random>
+#include <boost/random/mersenne_twister.hpp>
 
 #define YEAR 1.0
 #define DAY (YEAR / 365)
@@ -10,6 +11,8 @@
 #define AGE_INTERVAL 5
 #define NUM_INTERVALS ( MAX_AGE / AGE_INTERVAL + 1 )
 
+typedef boost::random::mt19937 RNG_TYPE;
+// typedef std::mt19937 RNG_TYPE;
 
 #define MALE 0
 #define FEMALE 1
@@ -28,7 +31,7 @@
 
 #define GRAPH_ACCURACY 10000
 
-extern thread_local std::mt19937 rng;
+extern thread_local RNG_TYPE rng;
 
 /**
    Macro used for unit testing.  Tests if two values are equal, incrementing

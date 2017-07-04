@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include "simulate.hh"
 
-thread_local std::mt19937 rng;
+thread_local RNG_TYPE rng;
 
 /**
    Writes analytical information in comma separated format to stdout. This is

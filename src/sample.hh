@@ -7,14 +7,18 @@
 
 #include <iostream>
 #include <random>
+#include <boost/random/mersenne_twister.hpp>
 #include <vector>
+
+#include "common.hh"
+
 extern "C" {
 #include "ransampl.h"
 }
 
 using namespace std;
 
-template <class RNG=std::mt19937>
+template <class RNG=RNG_TYPE>
 class Sample {
 public:
   /**
