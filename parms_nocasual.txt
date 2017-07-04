@@ -1,3 +1,5 @@
+# Similar to paper 2 but with casual switched off.
+
 SCALE_CASUAL_SEX_PROB 0
 TRACK_PARTNERS 0
 
