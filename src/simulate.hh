@@ -523,7 +523,6 @@ public:
 
     // Get the initial demographic information for reporting
     calculateDemographics();
-
   }
 
 
@@ -717,6 +716,9 @@ public:
    */
   void calculateDemographics()
   {
+    numMales = numMsw = numMsm = numInfectedMales = numInfectedMsw = numInfectedMsm =
+      numFemales = numWsw = numWsm = numInfectedFemales = numInfectedWsw = numInfectedWsm =
+      0;
     for (unsigned i = 0; i < agents.size(); ++i) {
       if (agents[i]->sex == MALE) {
         ++numMales;
@@ -813,6 +815,7 @@ public:
 
     // Do whenever we call analysis
     csvout("ANALYSIS", "INFECTED", numInfectedMales + numInfectedFemales);
+
     csvout("ANALYSIS", "PREVALENCE", prevalence);
     csvout("ANALYSIS", "PARTNERSHIPS", totalPartnerships);
 

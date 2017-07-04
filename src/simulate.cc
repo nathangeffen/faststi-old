@@ -328,6 +328,7 @@ void limitFrequencyMatingPoolEvent(Simulation *simulation)
               });
 
   simulation->matingPool.resize(maxMatingAgents);
+  std::shuffle(simulation->matingPool.begin(), simulation->matingPool.end(), rng);
   matingPoolCommon(simulation);
 }
 
@@ -784,24 +785,32 @@ void runTests(ParameterMap& parameterMap)
   }
 
   {
+    parameterMap["START_DATE"].values = {2017};
     parameterMap["END_DATE"].values = {2018};
-    parameterMap["TIME_STEP"].values = {0.5};
+    parameterMap["TIME_STEP"].values = {0.01};
+    parameterMap["HET_MALE_INFECTIOUSNESS"].values = {0.8};
+    parameterMap["HET_FEMALE_INFECTIOUSNESS"].values = {0.4};
     parameterMap["PRINT_PARAMETERS"].values = {0};
-    parameterMap["ANALYZE_AFTER_INIT"].values = {0};
-    parameterMap["ANALYZE_AT_END"].values = {0};
+    parameterMap["ANALYZE_INIT"].values = {0};
+    parameterMap["ANALYZE_DURING_SIM"].values = {0};
+    parameterMap["ANALYZE_AFTER"].values = {0};
     parameterMap["OUTPUT_NUM_BREAKUPS"].values = {0};
     parameterMap["OUTPUT_NUM_MATINGPOOL"].values = {0};
     parameterMap["OUTPUT_TIMING_AFTER"].values = {0};
     Simulation s(parameterMap, 1);
     s.initializeAgents();
-    s.calculateDemographics();
     TESTEQ(s.numInfectedMales > 0, true, successes, failures);
     TESTEQ(s.numInfectedFemales > 0, true, successes, failures);
     unsigned infected = s.numInfectedMales + s.numInfectedFemales;
     TESTEQ(infected < parameterMap.at("NUM_AGENTS").dbl(), true,
            successes, failures);
+    unsigned totalinfected = 0;
+    for (auto &a : s.agents) if (a->infected) ++totalinfected;
+    TESTEQ(infected, totalinfected, successes, failures);
     s.simulate(false);
-    s.calculateDemographics();
+    totalinfected = 0;
+    for (auto &a : s.agents) if (a->infected) ++totalinfected;
+    TESTEQ(s.numInfectedMales + s.numInfectedFemales, totalinfected, successes, failures);
     TESTEQ(s.numInfectedMales + s.numInfectedFemales > infected, true,
            successes, failures);
     infected = s.numInfectedMales + s.numInfectedFemales;
