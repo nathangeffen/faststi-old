@@ -50,8 +50,8 @@ analyzeVar <- function(varName, analysisDate, description, descField, input)
   } else {
     analysisDate = min(values$Date)
   }
-  values = values[values$Date==analysisDate,]    
-  meanValues = aggregate(values$Value, 
+  values = values[values$Date==analysisDate,]
+  meanValues = aggregate(values$Value,
                          by=list(values$Name),
                          FUN=mean)
   ci_02_5 = aggregate(values$Value,
@@ -60,8 +60,8 @@ analyzeVar <- function(varName, analysisDate, description, descField, input)
   ci_97_5 = aggregate(values$Value,
                       by=list(values$Name),
                       FUN=confinterval_97_5)
-  
-  #newrow = c(meanValues$Group.1[1], description[1], 
+
+  #newrow = c(meanValues$Group.1[1], description[1],
   #           as.double(meanValues$x[1]), as.double(ci_02_5$x[1]), as.double(ci_97_5$x[1]))
   #print(newrow)
   #df <- rbind(df, newrow)
@@ -110,6 +110,7 @@ analyzeVar("PARTNERSHIPS", 0, "INITIAL PARTNERSHIPS")
 analyzeVar("PARTNERSHIPS", description="FINAL PARTNERSHIPS")
 analyzeVar("CASUAL")
 analyzeVar("POOR")
+analyzeVar("SCORE")
 analyzeVar("SINGLES", 0, "INITIAL SINGLES")
 analyzeVar("SINGLES", description="FINAL SINGLES")
 analyzeVar("TIMING", descField = 1)
