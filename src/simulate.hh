@@ -1,6 +1,7 @@
 #ifndef SIMULATE_HH
 #define SIMULATE_HH
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <initializer_list>
@@ -366,7 +367,23 @@ public:
     unsigned outputAgentsAfterStabilization =
       parameterMap.at("OUTPUT_AGENTS_AFTER_STABILIZATION").dbl();
     for (unsigned i = 0; i < numIterations; ++i, currentDate += timeStep) {
+#ifdef TIMING
+      unsigned eventCtr = 0;
+      for (auto& e: events) {
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        start = std::chrono::system_clock::now();
+        e(this);
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        stringstream ss;
+        ss << eventCtr;
+        csvout("TIMING", ss.str().c_str(), elapsed_seconds.count());
+        ++eventCtr;
+      }
+#else
       for (auto& e: events) e(this);
+#endif
+
       if (timing > 0 && (i + 1) % timing == 0) {
         gettimeofday(&timeEnd, NULL);
         elapsedTime = timeEnd.tv_sec - timeBegin.tv_sec;

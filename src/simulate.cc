@@ -150,7 +150,7 @@ void frequencyBreakupEvent(Simulation* simulation)
   unsigned breakups = 0;
   std::uniform_real_distribution<double> uni(0.0, 1.0);
   for (auto& agent: simulation->agents) {
-    if (agent->partner) {
+    if (agent->partner && agent->id < agent->partner->id) {
       bool executeBreakup = false;
       if (agent->casualSex == true || agent->partner->casualSex == true) {
         agent->casualSex = agent->partner->casualSex = false;
@@ -159,10 +159,12 @@ void frequencyBreakupEvent(Simulation* simulation)
       } else {
         size_t index = std::min( (size_t) agent->age - MIN_AGE,
                                  (size_t) simulation->breakupProb.size() - 1);
-        double prob1 = simulation->breakupProb[index][1 + agent->sex];
+        double prob1 = simulation->breakupProb[index][1 + agent->sex] *
+          agent->relationshipPeriodFactor;
         index = std::min( (size_t) agent->partner->age - MIN_AGE,
                           (size_t) simulation->breakupProb.size() - 1);
-        double prob2 = simulation->breakupProb[index][1 + agent->partner->sex];
+        double prob2 = simulation->breakupProb[index][1 + agent->partner->sex] *
+          agent->partner->relationshipPeriodFactor;
         double prob = (prob1 + prob2) / 2.0;
         if (uni(rng) < prob) executeBreakup = true;
       }
