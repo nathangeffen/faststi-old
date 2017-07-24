@@ -1159,6 +1159,8 @@ public:
     unsigned a_age = std::min( (unsigned) a->age, (unsigned) MAX_AGE - 1) - MIN_AGE;
     unsigned b_age = std::min( (unsigned) b->age,  (unsigned) MAX_AGE - 1) - MIN_AGE;
 
+#if DONT_PENALISE_AGE
+#else
     if (a->sex == MALE and b->sex == FEMALE) {
       score += (mswAgeDist[a_age][b_age] + wsmAgeDist[b_age][a_age]) * 25;
     } else if (a->sex == FEMALE and b->sex == MALE) {
@@ -1170,7 +1172,10 @@ public:
     } else {
       throw std::runtime_error("Unknown sex combination");
     }
+#endif
 
+#if DONT_PENALISE_SEX_MISMATCH
+#else
     if (a->sexualOrientation != b->sexualOrientation) {
       score += 50.0;
     } else if (a->sexualOrientation == HETEROSEXUAL) {
@@ -1179,10 +1184,15 @@ public:
     } else if (a->sex != b->sex) {
       score += 50.0;
     }
+#endif
 
     if (trackPartners && partnerships.exists(a->id, b->id))
       score += 50.0;
+
+#if DONT_PENALISE_CASUAL_SEX
+#else
     if (a->casualSex != b->casualSex) score += 40.0;
+#endif
 
     return score;
   }
