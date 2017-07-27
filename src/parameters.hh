@@ -300,20 +300,19 @@ public:
     addParameter("PARTNERS_RESERVE",
                  "Capacity for partnerships unordered set (advanced)", {0});
 
-    addParameter("RANDOM_SEED", "Value to set random seed to",
-                 {1});
+    addParameter("RANDOM_SEED", "Value to set random seed to", {1});
 
     addParameter("PROB_CASUAL_SEX_CSV",
                  "File of probabilities that single agent has 'one night stand'",
-                 "data/ONSProbSimple.csv");
+                 "data/ONSProb-20170727.csv");
 
     addParameter("FREQUENCY_RELATIONSHIP_CSV",
                  "File of probabilities that agent forms relationship",
-                 "data/dailyEnterRelationship.csv");
+                 "data/dailyEnterRelationship-20170727.csv");
 
     addParameter("FREQUENCY_BREAKUP_CSV",
                  "File of probabilities that agent breaks relationship",
-                 "data/dailyBreakup.csv");
+                 "data/dailyBreakup-20170727.csv");
 
     addParameter("PROB_INFECTED_IF_PARTNER",
                  "Probability on initialization of an agent being infected "

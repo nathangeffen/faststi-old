@@ -271,7 +271,7 @@ void frequencyMatingPoolEvent(Simulation* simulation)
     if (agent->partner == NULL) {
       size_t index = std::min( (size_t) agent->age - MIN_AGE,
                                (size_t) simulation->casualSexProb.size() - 1);
-      if (uni(rng) < (simulation->casualSexProb[index][1] *
+      if (uni(rng) < (simulation->casualSexProb[index][1 + agent->sex] *
                       agent->casualSexFactor)) {
         agent->casualSex = true;
         simulation->matingPool.push_back(agent);
@@ -301,7 +301,7 @@ void limitFrequencyMatingPoolEvent(Simulation *simulation)
     if (agent->partner == NULL) {
       size_t index = std::min( (size_t) agent->age - MIN_AGE,
                                (size_t) simulation->casualSexProb.size() - 1);
-      if (uni(rng) < (simulation->casualSexProb[index][1] *
+      if (uni(rng) < (simulation->casualSexProb[index][1 + agent->sex] *
                       agent->casualSexFactor)) {
         agent->casualSex = true;
         agent->weight = -1.0;
