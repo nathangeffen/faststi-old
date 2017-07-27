@@ -269,21 +269,37 @@ void frequencyMatingPoolEvent(Simulation* simulation)
   for (auto& agent: simulation->agents) {
     std::uniform_real_distribution<double> uni(0.0, 1.0);
     if (agent->partner == NULL) {
-      size_t index = std::min( (size_t) agent->age - MIN_AGE,
-                               (size_t) simulation->casualSexProb.size() - 1);
-      if (uni(rng) < (simulation->casualSexProb[index][1 + agent->sex] *
-                      agent->casualSexFactor)) {
-        agent->casualSex = true;
-        simulation->matingPool.push_back(agent);
+      size_t index =
+        std::min( (size_t) agent->age - MIN_AGE,
+                  (size_t) simulation->relationshipProb.size() - 1);
+      if (uni(rng) < simulation->relationshipProb[index][1 + agent->sex] *
+          agent->singlePeriodFactor) {
+          simulation->matingPool.push_back(agent);
       } else {
-        size_t index =
-          std::min( (size_t) agent->age - MIN_AGE,
-                    (size_t) simulation->relationshipProb.size() - 1);
-        if (uni(rng) < simulation->relationshipProb[index][1 + agent->sex] *
-            agent->singlePeriodFactor) {
+        size_t index = std::min( (size_t) agent->age - MIN_AGE,
+                                 (size_t) simulation->casualSexProb.size() - 1);
+        if (uni(rng) < (simulation->casualSexProb[index][1 + agent->sex] *
+                        agent->casualSexFactor)) {
+          agent->casualSex = true;
           simulation->matingPool.push_back(agent);
         }
       }
+      // size_t index = std::min( (size_t) agent->age - MIN_AGE,
+      //                          (size_t) simulation->casualSexProb.size() - 1);
+      // if (uni(rng) < (simulation->casualSexProb[index][1 + agent->sex] *
+      //                 agent->casualSexFactor)) {
+      //   agent->casualSex = true;
+      //   simulation->matingPool.push_back(agent);
+      // } else {
+      //   size_t index =
+      //     std::min( (size_t) agent->age - MIN_AGE,
+      //               (size_t) simulation->relationshipProb.size() - 1);
+      //   if (uni(rng) < simulation->relationshipProb[index][1 + agent->sex] *
+      //       agent->singlePeriodFactor) {
+      //     simulation->matingPool.push_back(agent);
+      //   }
+      // }
+
     }
   }
   std::shuffle(simulation->matingPool.begin(), simulation->matingPool.end(),
