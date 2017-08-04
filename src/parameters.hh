@@ -229,6 +229,8 @@ public:
                  "Analyze number of singles during simulation", {0});
     addParameter("ANALYZE_SINGLES_AFTER",
                  "Analyze number of singles after simulation", {0});
+    addParameter("ANALYZE_PARTNERS_AFTER",
+                 "Analyze average number of partners after simulation", {0});
 
     addParameter("INC_TRUNCATED_AGE", "Increment min and max age by time steps", {0});
     addParameter("PRINT_PARAMETERS",

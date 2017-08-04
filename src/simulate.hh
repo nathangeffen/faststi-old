@@ -415,7 +415,9 @@ public:
     outputAgents = parameterMap.at("OUTPUT_AGENTS_AFTER").dbl();
     if (outputAgents) printAgents(agents, simulationNum, endDate);
     if ( (unsigned) parameterMap.at("ANALYZE_AFTER").isSet()) {
-      analysis(true, true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter);
+      bool analyzePartnersAfter = parameterMap.at("ANALYZE_PARTNERS_AFTER").isSet();
+      analysis(true, true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter,
+               analyzePartnersAfter);
     }
     std::string systemAfter = parameterMap.at("SYSTEM_COMMAND_BEFORE").str();
     if (systemAfter != "") {
@@ -821,7 +823,8 @@ public:
                 const bool ageStats = false,
                 const bool scoreStats = false,
                 const bool truncatedAge = false,
-                const bool singleStats = false)
+                const bool singleStats = false,
+                const bool partnerStats = false)
   {
     double prevalence = (double) (numInfectedMales + numInfectedFemales) /
       (numMales + numFemales);
@@ -971,6 +974,12 @@ public:
       unsigned single = 0;
       for (auto& a: agents) if (a->partner == NULL) ++single;
       csvout("ANALYSIS", "SINGLES", single);
+    }
+
+    if (partnerStats) {
+      unsigned partners = 0;
+      for (auto& a: agents) partners += a->numPartners;
+      csvout("ANALYSIS", "AVG_PARTNERS", (double) partners / agents.size() );
     }
   }
 
