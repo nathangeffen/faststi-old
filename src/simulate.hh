@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -66,6 +67,9 @@ struct AgeStatistics {
   unsigned infectedMalesByAge[NUM_INTERVALS];
   unsigned infectedFemalesByAge[NUM_INTERVALS];
 };
+
+static AgentVector savedAgents;
+static bool savedAgentsLoaded = false;
 
 /**
    Simulation engine for Faststi.
@@ -273,6 +277,8 @@ public:
       distanceMethod = HEURISTIC_DISTANCE;
     else if (s == "TABLE")
       distanceMethod = TABLE_DISTANCE;
+    else if (s == "SYPHILIS")
+      distanceMethod = SYPHILIS_DISTANCE;
     else {
       throw std::runtime_error ("Unknown distance method");
     }
@@ -283,12 +289,14 @@ public:
     auto lf = parameterMap.at("PARTNERS_LOAD_FACTOR").dbl();
     if (lf > 0) partnerships.partnerships.max_load_factor(lf);
 
+#ifndef SYPHILIS_FIT
     // Minimum and maximum ages
     minAge = parameterMap.at("MIN_AGE_TRUNCATE").dbl();
     if (minAge == 0) minAge = MIN_AGE;
     maxAge = parameterMap.at("MAX_AGE_TRUNCATE").dbl();
     if (maxAge == 0) maxAge = MAX_AGE;
     incTruncatedAge = parameterMap.at("INC_TRUNCATED_AGE").isSet();
+
 
     // Age distribution matrices
     msmAgeDist = matrixFromCSV("MSM_AGE_DIST_CSV", ",", true);
@@ -310,6 +318,7 @@ public:
     for (auto& entry: casualSexProb) {
       entry[1] *= scaleCasualSexProb;
     }
+#endif
   }
 
   /**
@@ -334,14 +343,36 @@ public:
     };
 
     gettimeofday(&timeBegin, NULL);
-    if (initAgents) initializeAgents();
+    if (initAgents) {
+      std::string agentInputFile = parameterMap.at("AGENT_INPUT_FILE").str();
+      if (agentInputFile == "") {
+        initializeAgents();
+      } else {
+        if (parameterMap.at("READ_AGENT_FILE_ONCE").isSet()) {
+          std::mutex mtx;
+          mtx.lock();
+          if (savedAgentsLoaded == false) {
+            savedAgentsLoaded = true;
+            readAgents(agentInputFile, savedAgents);
+          }
+          mtx.unlock();
+          agents = savedAgents;
+        } else {
+          readAgents(agentInputFile, agents);
+        }
+#ifdef SYPHILIS_FIT
+        msmAgeDist = matrixFromCSV("MSM_AGE_DIST_CSV", ",", true);
+        casualSexProb = matrixFromCSV("PROB_CASUAL_SEX_CSV", ",", true);
+#endif
+      }
+    }
     gettimeofday(&timeEnd, NULL);
     elapsedTime = timeEnd.tv_sec - timeBegin.tv_sec;
     if (parameterMap.at("OUTPUT_INIT_TIMING").dbl()) {
       csvout("TIMING", "INIT", elapsedTime);
     }
     if (parameterMap.at("OUTPUT_AGENTS_INIT").isSet()) {
-      printAgents(agents, simulationNum, startDate);
+      printAgents(agents, simulationName, simulationNum, startDate);
     }
     if (parameterMap.at("ANALYZE_INIT").isSet()) {
       analysis(true, true, false, analyzeTruncatedAgeInit, analyzeSinglesInit);
@@ -390,14 +421,14 @@ public:
         csvout("TIMING","DURING", elapsedTime);
       }
       if (outputAgents > 0 && (i + 1) % outputFrequency == 0) {
-        printAgents(agents, simulationNum, currentDate);
+        printAgents(agents, simulationName, simulationNum, currentDate);
       }
       if ( stabilizationSteps > 0 && stabilizationSteps == i) {
         inStabilizationPeriod = false;
         if (analyzeAfterStabilization) analysis(true, true, true, analyzeTruncatedAgeInit,
                                                 analyzeSinglesInit);
         if (outputAgentsAfterStabilization) {
-          printAgents(agents, simulationNum, currentDate);
+          printAgents(agents, simulationName, simulationNum, currentDate);
         }
       } else if (analyzeFrequency &&
                  (i + 1) % analyzeFrequency == 0) {
@@ -413,7 +444,7 @@ public:
 
     /* Wrap up */
     outputAgents = parameterMap.at("OUTPUT_AGENTS_AFTER").dbl();
-    if (outputAgents) printAgents(agents, simulationNum, endDate);
+    if (outputAgents) printAgents(agents, simulationName, simulationNum, endDate);
     if ( (unsigned) parameterMap.at("ANALYZE_AFTER").isSet()) {
       bool analyzePartnersAfter = parameterMap.at("ANALYZE_PARTNERS_AFTER").isSet();
       analysis(true, true, true, analyzeTruncatedAgeAfter, analyzeSinglesAfter,
@@ -443,6 +474,26 @@ public:
     CSVParser csvParser(filename.c_str(), delim, hasHeader);
     DblMatrix result = csvParser.toDoubles();
     return result;
+  }
+
+  /**
+   Reads in a file of agents.
+
+   @param filename[in] Name of csv file containing agents
+  */
+  virtual void readAgents(std::string filename, AgentVector& agents)
+  {
+    CSVParser csvParser(filename.c_str(), ",", true);
+    DblMatrix agentRows = csvParser.toDoubles();
+    for (auto & row: agentRows) {
+      Agent *a = new Agent();
+      a->id = row[0];
+      a->age = row[1];
+      a->casualSexFactor = row[2];
+      a->sex = row[3];
+      a->sexualOrientation = row[4];
+      agents.push_back(a);
+    }
   }
 
   /**
@@ -1120,8 +1171,12 @@ public:
    */
   double distance(const Agent *a, const Agent *b) const
   {
-    return distanceMethod == HEURISTIC_DISTANCE
-      ? heuristicDistance(a, b) : tableDistance(a, b);
+    switch(distanceMethod) {
+    case HEURISTIC_DISTANCE: return heuristicDistance(a, b);
+    case TABLE_DISTANCE: return tableDistance(a, b);
+    case SYPHILIS_DISTANCE: return syphilisDistance(a, b);
+    default: fprintf(stderr, "Unknown distance function\n"); exit(1);
+    }
   }
 
   /**
@@ -1206,6 +1261,14 @@ public:
     return score;
   }
 
+  double syphilisDistance(const Agent *a, const Agent *b) const
+  {
+    double distance;
+    distance = 1.0 - msmAgeDist[a->age - 1][b->age - 1];
+    distance += 1.0 - casualSexProb[a->casualSexFactor - 1][b->casualSexFactor - 1];
+    return distance;
+  }
+
   /**
      Calculates the cluster value for an agent. Useful in some pair-matching
      algorithms, such as CSPM.
@@ -1214,8 +1277,12 @@ public:
   */
   double clusterValue(const Agent *a) const
   {
+#ifdef SYPHILIS_FIT
+    return a->age + 10 * a->casualSexFactor;
+#else
     return ( (double) a->desiredAge / 100.0 + a->age / 100.0) / 2.0
       +  a->casualSex * 4 + a->sexualOrientation * 8;
+#endif
   }
 
   virtual void setEvents();

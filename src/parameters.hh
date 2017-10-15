@@ -244,8 +244,11 @@ public:
     addParameter("OUTPUT_TIMING_AFTER",
                  "Output time every x iterations", {1});
 
-    addParameter("AGENT_INITIAL_FILE",
+    addParameter("AGENT_INPUT_FILE",
                  "File of agents for initialization (blank for built-in method)", "");
+    addParameter("READ_AGENT_FILE_ONCE",
+                 "If set then agent file is read once, before all simulations",
+                 {1});
     addParameter("AGENT_DATA_CSV",
                  "Agent data for initialization", "data/data.csv");
     addParameter("SINGLES_DATA_CSV",
@@ -283,7 +286,7 @@ public:
                  "FREQUENCY");
     addParameter("MATING_POOL_EVENT",
                  "Algorithm for mating pool creation event "
-                 "(FREQUENCY/LIMIT/RANDOM/NONE)", "FREQUENCY");
+                 "(FREQUENCY/LIMIT/RANDOM/ALL/NONE)", "FREQUENCY");
 
     addParameter("OUTPUT_NUM_BREAKUPS",
                  "Print number of breakups on every time step", {0});

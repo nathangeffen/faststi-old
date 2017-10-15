@@ -39,6 +39,7 @@ inline void writeCsvLine(const std::string& simulationName,
 }
 
 
+
 /**
    Calculates the number of people who are single in the initial population.
 
@@ -350,6 +351,12 @@ void limitFrequencyMatingPoolEvent(Simulation *simulation)
   matingPoolCommon(simulation);
 }
 
+void allMatingPoolEvent(Simulation *simulation)
+{
+  simulation->matingPool = simulation->agents;
+  matingPoolCommon(simulation);
+}
+
 void randomMatingPoolEvent(Simulation* simulation)
 {
   unsigned matingAgents = 0;
@@ -515,6 +522,8 @@ void Simulation::setEvents()
     events.push_back(randomMatingPoolEvent);
   } else if (s == "LIMIT") {
     events.push_back(limitFrequencyMatingPoolEvent);
+  } else if (s == "ALL") {
+    events.push_back(allMatingPoolEvent);
   } else if (s != "NONE") {
     throw std::runtime_error("Unknown breakup event");
   };

@@ -10,14 +10,16 @@
  */
 
 void printAgents(const AgentVector& agents,
+                 const std::string simulationName,
                  const unsigned simulationNum,
                  const double currentDate,
                  std::ostream& out)
 {
   for (auto& agent: agents) {
     std::ostringstream stream;
-    stream << "AGENT," << simulationNum << "," << currentDate << ","
-        << *agent << std::endl;
+    stream << "AGENT," << simulationName << "," << simulationNum
+           << "," << currentDate << ","
+           << *agent << std::endl;
     out << stream.str();
   }
 }
@@ -31,6 +33,11 @@ void printAgents(const AgentVector& agents,
 std::ostream& operator<<(std::ostream& os, const Agent& agent)
 {
   std::ostringstream stream;
+  stream << agent.id << "," << agent.age << "," << agent.casualSexFactor << ","
+         << agent.sex << "," << agent.sexualOrientation << ","
+         << (agent.partner ? agent.partner->id : 0);
+#ifdef SYPHILIS_FIT
+#else
   stream << "ID," << agent.id << ",Age," << agent.age
          << ",Sex," << (agent.sex == MALE ? "M" : "F")
          << ",Orientation," << (agent.sexualOrientation == HETEROSEXUAL
@@ -48,6 +55,7 @@ std::ostream& operator<<(std::ostream& os, const Agent& agent)
     stream << ",,,,,,,,,,";
   }
   stream << ",Date," << agent.relationshipChangeDate;
+#endif
   os << stream.str();
   return os;
 }

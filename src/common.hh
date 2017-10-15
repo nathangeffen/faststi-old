@@ -28,6 +28,7 @@ typedef boost::random::mt19937 RNG_TYPE;
 
 #define HEURISTIC_DISTANCE 0
 #define TABLE_DISTANCE 1
+#define SYPHILIS_DISTANCE 2
 
 #define GRAPH_ACCURACY 10000
 

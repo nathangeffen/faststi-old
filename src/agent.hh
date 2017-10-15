@@ -21,29 +21,31 @@
 class Agent {
 public:
   uint32_t id = 0;
+  unsigned short sex;
+  unsigned short sexualOrientation;
   Agent* partner;
-  Agent* infector = NULL;
-
-  double singlePeriodFactor;
-  double relationshipPeriodFactor;
-  double casualSexFactor;
-  double relationshipChangeDate = 0.0;
   double age;
   double desiredAge;
   double weight; // Used by some pair-matching algorithms
 
-  unsigned short sex;
-  unsigned short sexualOrientation;
+  Agent* infector = NULL;
+  double singlePeriodFactor;
+  double relationshipPeriodFactor;
+  double casualSexFactor;
+  double relationshipChangeDate = 0.0;
+
+
   bool infected;
   bool virgin = false;
   bool casualSex = false;
 
   unsigned numPartners = 0;
   unsigned numInfected = 0;
+
 };
 
 typedef std::vector<Agent *> AgentVector;
-void printAgents(const AgentVector&, unsigned, double,
+void printAgents(const AgentVector&, std::string, unsigned, double,
                  std::ostream& = std::cout);
 std::ostream& operator<<(std::ostream& os, const Agent& agent);
 

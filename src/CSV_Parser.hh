@@ -49,6 +49,7 @@ public:
     }
   };
 
+
   /**
      Converts the CSV cells into doubles.
    */
